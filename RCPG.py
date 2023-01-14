@@ -5,13 +5,11 @@
 
 
 import tensorflow as tf
-from keras.models import Sequential
-from keras.layers import Dense
 from State import InitialDiscreteState
-from keras.optimizers import Adam
-import keras.backend as K
+from keras.optimizers import SGD
 import numpy as np
-from random import choice
+from Policy import StochasticPol
+
 
 class RCPG(object):
     def __init__(self,pi, actions, gamma, d, p_0,T,terminals,c_hat,r_hat,P_hat, perturbations,optimiser_theta,optimiser_lbda, iterations):
@@ -48,10 +46,7 @@ class RCPG(object):
         self.lbda = tf.Variable(0.1)
 
     def simulation_step(self,s):
-        with tf.GradientTape() as tape:
-            a_probs = self.pi(np.array([s]))[0]
-            grad = tape.gradient(a_probs, self.pi.trainable_weights)
-        a = np.random.choice(len(a_probs),p=K.eval(a_probs))
+        a,grad = self.pi.select_action(s)
         a = self.actions[a]
         p = np.random.choice(len(self.perturbations))
         perturb = self.perturbations[p]
@@ -62,6 +57,7 @@ class RCPG(object):
         return (s,a,r,c,s_next,grad)
     def test(self):
         R=0
+        C=0
         s = p_0.generate()
         t=0
         while True:
@@ -70,14 +66,17 @@ class RCPG(object):
             (s, a, r, c, s_next, grad) = self.simulation_step(s)
             s=s_next
             R+=r
+            C+=c
             t+=1
         print("R",R)
+        print("C", C)
         return R
     def offline_optimisation(self):
 
         trajectories = []
         for it in range(self.iterations):
             R = 0
+            C = 0
             print("iteration ", it, "/",self.iterations)
             s = p_0.generate()
             for t in range(self.T):
@@ -87,7 +86,9 @@ class RCPG(object):
                 trajectories.append((s,a,r,c,s_next,grad))
                 s=s_next
                 R += r
+                C += c
             print("R", R)
+            print("C",C)
             T_stop = t - 1
             V = 0
             C = 0
@@ -95,8 +96,10 @@ class RCPG(object):
                 s,a,r,c,s_next,grad = trajectories[t]
                 V = r + self.gamma * V
                 C = c + self.gamma * C
-                actual_lbda = tf.clip_by_value(tf.exp(self.lbda), clip_value_min=0, clip_value_max=1000)
-                L = -(V-actual_lbda*C)
+                actual_lbda = tf.clip_by_value(tf.exp(self.lbda), clip_value_min=0, clip_value_max=10000)
+                # entropy = - sum(K.log(p) * p)  # just to make sure it scales well use lambda here as well
+                # print("entropy ", K.eval(entropy))
+                L = -(V-actual_lbda*C)           # add some entropy regularisation as well
                 update = [L * g for g in grad]   # dL/d\pi * d\pi/d\theta
                 self.update_theta(update)
                 update_l = -(C - self.d)           # dL/d\lambda
@@ -109,12 +112,10 @@ class RCPG(object):
         self.pi.summary()
 
     def update_theta(self,grad_theta):
-        """ TODO: make sure learning rate schedule implemented and connection with keras"""
-        self.optimiser_theta.apply_gradients(zip(grad_theta, self.pi.trainable_weights))  # increase iteration by one
+        self.optimiser_theta.apply_gradients(zip(grad_theta, self.pi.params()))  # increase iteration by one
 
 
     def update_lbda(self,grad_lbda):
-        """ TODO: make sure learning rate schedule implemented and connection with keras"""
         self.optimiser_lbda.apply_gradients([(grad_lbda, self.lbda)])  # increase iteration by one
 
 
@@ -147,19 +148,19 @@ if __name__ == "__main__":
         x, y = s
         s_next = (np.clip(x + a[0] +perturb[0], 0, 4), np.clip(y + a[1] + perturb[1],0,4))
         return s_next   # go vertical first rather than horizontal first
-    pi = Sequential()
-    pi.add(Dense(20, name="hidden1",activation="relu",kernel_initializer='uniform', input_shape=(D_S,)))
-    pi.add(Dense(D_A, name="output",activation="softmax"))
+
+    pi = StochasticPol(D_S,D_A)
     X, Y = np.mgrid[-1:2:1, -1:2:1]
     perturbations = [(0,0)]#list(np.vstack((X.flatten(), Y.flatten())).T)
 
-    opt = Adam(learning_rate=0.10)
-    opt2 = Adam(learning_rate=0.10)
+    opt = SGD(learning_rate=0.10)
+    opt2 = SGD(learning_rate=0.01)
 
     iterations = 1000
     gamma = 0.99
     rcpg = RCPG(pi, actions, gamma , d, p_0, T, terminals, c_hat, r_hat, P_hat, perturbations, opt, opt2,iterations)
     rcpg.offline_optimisation()
-    rcpg.test()
+    for i in range(100):
+        rcpg.test()
 
 
