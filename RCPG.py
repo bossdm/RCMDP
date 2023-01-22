@@ -7,11 +7,9 @@
 import tensorflow as tf
 from State import InitialDiscreteState
 from keras.optimizers import SGD
-import numpy as np
 from Policy import StochasticPol
 from UncertaintySet import *
 from CMDP import *
-from keras.callbacks import LearningRateScheduler
 
 class RCPG(object):
     def __init__(self,pi, actions, gamma, d,  real_CMDP, uncertainty_set,optimiser_theta,optimiser_lbda,
@@ -77,7 +75,7 @@ class RCPG(object):
             C = 0
             self.n += 1 # count
             for t in range(T_stop,-1,-1):
-                s,a,r,c,s_next,grad = trajectory[t]
+                s,a,r,c,s_next,grad, grad_adv, probs_adv = trajectory[t]
                 V = r + self.gamma * V
                 C = c + self.gamma * C
                 actual_lbda = tf.clip_by_value(tf.exp(self.lbda), clip_value_min=0, clip_value_max=10000)
@@ -88,6 +86,9 @@ class RCPG(object):
                 self.update_theta(update)
                 update_l = -eta2*(C - self.d)           # dL/d\lambda
                 self.update_lbda(update_l)
+                if self.sim_CMDP.uncertainty_set.adversarial: # min L s.t. ||P-P*|| <= alpha
+                    # try to make the agent fail the objective
+                    self.sim_CMDP.uncertainty_set.update_adversary(eta1,eta2,s,a,L,grad_adv,probs_adv)
                 # print("L",L)
                 # print("lbda",actual_lbda)
             print("L",L)
@@ -146,11 +147,17 @@ if __name__ == "__main__":
     opt = SGD(learning_rate=0.1)  # note: learning rate here is further multiplied by the functions above
     # it is set just before applying gradients based on the schedule functions above
     opt2 = SGD(learning_rate=0.01)
+
+    opt_adv = SGD(learning_rate=0.1)  # note: learning rate here is further multiplied by the functions above
+    # it is set just before applying gradients based on the schedule functions above
+    opt2_adv = SGD(learning_rate=0.01)
     sim_iterations = 1000
     real_iterations = 100
     train_iterations = 1
     gamma = 0.99
-    uncertainty_set=DummyUncertaintySet(states=states,actions=actions)
+    #uncertainty_set=DummyUncertaintySet(states=states,actions=actions)
+    uncertainty_set=HoeffdingSet(delta=0.999,states=states,actions=actions,D_S=D_S,D_A=D_A,
+                                 optimiser_theta=opt_adv,optimiser_lbda=opt2_adv)
     rcpg = RCPG(pi, actions, gamma , d, real_cmdp, uncertainty_set, opt, opt2, sim_iterations,real_iterations,train_iterations,lr1,lr2)
     rcpg.train()
     for i in range(100):

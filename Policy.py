@@ -26,5 +26,5 @@ class StochasticPol(object):
         a = np.random.choice(len(probs), p=probs)
         pr = probs[a]
         grad = [ g /pr for g in grad] # (and divide by the probability of the action to compensate for more frequent updates)
-        return a, grad
+        return a, grad, probs
 

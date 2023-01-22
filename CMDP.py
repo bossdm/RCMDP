@@ -13,13 +13,13 @@ class CMDP(object):
         self.terminals=terminals
 
     def step(self,s,pi):
-        a_index, grad = pi.select_action(s)
+        a_index, grad,_probs = pi.select_action(s)
         a = self.actions[a_index]
         s_next = self.P(s, a)
         c = self.c(s_next)
         r = self.r(s_next)
         # print("s_next ",s_next)
-        return (s, a, r, c, s_next,grad)
+        return (s, a, r, c, s_next,grad,None,None)
 
     def episode(self,pi):
         R = 0
@@ -29,8 +29,8 @@ class CMDP(object):
         for t in range(self.T):
             if s in self.terminals or t > 200:
                 break
-            (s, a, r, c, s_next, grad) = self.step(s,pi)
-            trajectory.append((s, a, r, c, s_next, grad))
+            (s, a, r, c, s_next, grad,grad_adv,probs) = self.step(s,pi)
+            trajectory.append((s, a, r, c, s_next, grad, grad_adv,probs))
             s = s_next
             R += r
             C += c
@@ -48,8 +48,8 @@ class RobustCMDP(CMDP):
         return rcmdp
     def step(self,s,pi):
         s_index = self.uncertainty_set.states.index(s)
-        a_index, grad = pi.select_action(s)
-        s_next = self.uncertainty_set.random_state(s_index, a_index)
+        a_index, grad, _probs = pi.select_action(s)
+        s_next, grad_adv, probs_adv = self.uncertainty_set.random_state(s_index, a_index)
         c = self.c(s_next)
         r = self.r(s_next)
-        return (s_index, a_index, r, c, s_next, grad)
+        return (s_index, a_index, r, c, s_next, grad, grad_adv, probs_adv)
