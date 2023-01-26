@@ -1,11 +1,8 @@
 
-import scipy
 import numpy as np
-from random import random
-import time
 from Policy import StochasticPol
 import tensorflow as tf
-
+import keras.backend as K
 
 class DummyUncertaintySet(object):
     adversarial = False
@@ -17,7 +14,7 @@ class DummyUncertaintySet(object):
         self.actions=actions
         self.nominal=np.zeros((self.S,self.A,self.S)) + 1/self.S # uniform at the start
     def add_visits(self,trajectory):
-        for s_index, a_index, _r, _c, s_next, _grad in trajectory:
+        for s_index, a_index, _r, _c, s_next, _grad,_grad_adv,_probs in trajectory:
             s_next_index = self.states.index(s_next)
             self.data[s_index, a_index, s_next_index] += 1  # add trajectory to the data counts
     def set_params(self):
@@ -34,7 +31,7 @@ class DummyUncertaintySet(object):
             print(self.nominal[s,a])
             print(e)
         s_next=self.states[s_next_index]
-        return s_next
+        return s_next, None, None
 
 class HoeffdingSet(object):
     """
@@ -113,8 +110,9 @@ class HoeffdingSet(object):
         self.optimiser_theta.apply_gradients(zip(update, self.pi.params()))  # increase iteration by one
         update_l = -eta2 * (delta_P - self.alpha[s,a])  # dL/d\lambda
         self.optimiser_lbda.apply_gradients([(update_l, self.lbda)])  # increase iteration by one
-        print("L_adv ", L_adv)
-        print("lbda_adv", self.lbda)
+        return K.eval(L_adv), K.eval(self.lbda)
+        #print("L_adv ", L_adv)
+        #print("lbda_adv", self.lbda)
 
 #
 #
