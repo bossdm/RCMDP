@@ -27,16 +27,16 @@ if __name__ == "__main__":
     D_A=4
     #S=25 # 5 by 5 grid
     #A=4  # up,down,right, or left
-    actions=[(-1,0),(1,0),(0,1),(0,-1)]
+    actions=[[-1,0],[1,0],[0,1],[0,-1]]
     # triangle_states=[(x,y) for y in range(4) for x in range(4) if x <= y]
     # l=len(triangle_states)
-    initial_states=[(0,0)]
+    initial_states=[[0,0]]
     p_0 = InitialDiscreteState(initial_states,probs=[1.])
-    terminals=[(4,4)]
+    terminals=[[4,4]]
     def r_real(s_next):    # try to reach the
         x,y = s_next
-        s_next = (np.clip(x,0,4),np.clip(y,0,4))
-        return 1.0 if s_next == (4,4) else -1.0  # go to the goal location
+        s_next = [np.clip(x,0,4),np.clip(y,0,4)]
+        return 1.0 if s_next == [4,4] else -1.0  # go to the goal location
 
     def c_real(s_next):  # try to reach the
         x, y = s_next
@@ -46,16 +46,17 @@ if __name__ == "__main__":
 
     def P_real(s, a):  # try to reach the
         x, y = s
-        s_next = (np.clip(x + a[0], 0, 4), np.clip(y + a[1],0,4))
+        s_next = [np.clip(x + a[0], 0, 4), np.clip(y + a[1],0,4)]
         return s_next   # go vertical first rather than horizontal first
     gamma=0.99
     if not os.path.exists(args.folder):
         os.makedirs(args.folder)
         print("created new folder ",args.folder)
 
-    states=[(i,j) for i in range(5) for j in range(5)]
+    states=[[i,j] for i in range(5) for j in range(5)]
+    next_states=states
     realcmdp_logfile = open(args.folder + "/real_cmdp_log.txt", "w")
-    real_cmdp = CMDP(p_0,r_real,c_real,P_real,states,actions,gamma,T,d,terminals,realcmdp_logfile)
+    real_cmdp = CMDP(p_0,r_real,c_real,P_real,states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile)
 
     pi = StochasticPol(D_S,D_A)
     sim_iterations = 1000
@@ -64,8 +65,8 @@ if __name__ == "__main__":
     test_its = 100
     gamma = 0.99
 
-    method = choose_method(args.method_name,args.learning_rate,args.learning_rate2,args.folder,pi, real_cmdp, sim_iterations, real_iterations,
-                    train_iterations,D_S,D_A)
+    method = choose_method(args.method_name,args.learning_rate,args.learning_rate2,args.folder,D_S,D_A,pi, real_cmdp, sim_iterations, real_iterations,
+                    train_iterations)
     method.train()
     for i in range(test_its):
         method.test()

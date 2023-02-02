@@ -39,6 +39,8 @@ class RCPG(object):
         self.logfile.write("L \t lambda \n")
         self.logfile.flush()
         self.simlogfile=simlogfile
+        self.gamma = self.real_CMDP.gamma
+        self.d = self.real_CMDP.d
 
     def train(self):
         for t in range(self.train_iterations):
@@ -47,43 +49,45 @@ class RCPG(object):
             self.offline_optimisation()
 
     def test(self):
-       self.real_CMDP.episode(self.pi)
+       self.real_CMDP.episode(self.pi,test=True)
 
     def real_samples(self):
         for it in range(self.real_iterations):
-            trajectory,t = self.real_CMDP.episode(self.pi)
+            trajectory = self.real_CMDP.episode(self.pi,test=False)
             self.uncertainty_set.add_visits(trajectory)
         self.uncertainty_set.set_params()
+    def update(self,trajectory,gamma,d):
+        V = 0
+        C = 0
+        self.n += 1  # count
+        for step in trajectory[::-1]:
+            s, a, r, c, s_next, grad, grad_adv, probs_adv = step
+            V = r + gamma * V
+            C = c + gamma * C
+            actual_lbda = tf.clip_by_value(tf.exp(self.lbda), clip_value_min=0, clip_value_max=10000)
+            eta1 = self.lr1(self.n)
+            eta2 = self.lr2(self.n)
+            L = -(V - actual_lbda * C)
+            update = [eta1 * L * g for g in grad]  # dL/d\pi * d\pi/d\theta
+            self.update_theta(update)
+            update_l = -eta2 * (C - d)  # dL/d\lambda
+            self.update_lbda(update_l)
+            if self.uncertainty_set.adversarial:  # min L s.t. ||P-P*|| <= alpha
+                # try to make the agent fail the objective
+                L_adv, lbda_adv = self.uncertainty_set.update_adversary(eta1, eta2, s, a, L, grad_adv, probs_adv)
+                self.logfile.write(
+                    "%.4f \t %.4f \t %.4f \t %.4f \n" % (K.eval(L), K.eval(actual_lbda), L_adv, lbda_adv))
+                self.logfile.flush()
+            else:
+                self.logfile.write("%.4f \t %.4f \n" % (K.eval(L), K.eval(actual_lbda)))
+                self.logfile.flush()
+            # print("L",L)
+            # print("lbda",actual_lbda)
     def offline_optimisation(self):
         self.sim_CMDP = RobustCMDP.from_CMDP(self.real_CMDP,self.simlogfile,self.uncertainty_set)
         for it in range(self.sim_iterations):
-            trajectory,t = self.sim_CMDP.episode(self.pi)
-            T_stop = t - 1
-            V = 0
-            C = 0
-            self.n += 1 # count
-            for t in range(T_stop,-1,-1):
-                s,a,r,c,s_next,grad, grad_adv, probs_adv = trajectory[t]
-                V = r + self.sim_CMDP.gamma * V
-                C = c + self.sim_CMDP.gamma * C
-                actual_lbda = tf.clip_by_value(tf.exp(self.lbda), clip_value_min=0, clip_value_max=10000)
-                eta1=self.lr1(self.n)
-                eta2=self.lr2(self.n)
-                L = -(V-actual_lbda*C)
-                update = [eta1 * L * g for g in grad]   # dL/d\pi * d\pi/d\theta
-                self.update_theta(update)
-                update_l = -eta2*(C - self.sim_CMDP.d)           # dL/d\lambda
-                self.update_lbda(update_l)
-                if self.sim_CMDP.uncertainty_set.adversarial: # min L s.t. ||P-P*|| <= alpha
-                    # try to make the agent fail the objective
-                    L_adv,lbda_adv = self.sim_CMDP.uncertainty_set.update_adversary(eta1,eta2,s,a,L,grad_adv,probs_adv)
-                    self.logfile.write("%.4f \t %.4f \t %.4f \t %.4f \n" % (K.eval(L), K.eval(actual_lbda),L_adv,lbda_adv))
-                    self.logfile.flush()
-                else:
-                    self.logfile.write("%.4f \t %.4f \n" % (K.eval(L), K.eval(actual_lbda)))
-                    self.logfile.flush()
-                # print("L",L)
-                # print("lbda",actual_lbda)
+            trajectory = self.sim_CMDP.episode(self.pi,test=False)
+            self.update(trajectory,self.sim_CMDP.gamma,self.sim_CMDP.d)
 
         print("offline optimisation ended")
         self.pi.summary()

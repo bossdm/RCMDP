@@ -4,18 +4,39 @@ from Policy import StochasticPol
 import tensorflow as tf
 import keras.backend as K
 
-class DummyUncertaintySet(object):
+
+
+class BaseUncertaintySet(object):
     adversarial = False
-    def __init__(self,states,actions):
+    def __init__(self,states,actions,next_states,centroids=[]):
         self.S=len(states)
         self.A=len(actions)
-        self.data = np.zeros((self.S,self.A,self.S))  # SxAxS frequency table
+        self.NS=len(next_states)
+        self.data = np.zeros((self.S,self.A,self.NS))  # SxAxS frequency table
         self.states=states
         self.actions=actions
-        self.nominal=np.zeros((self.S,self.A,self.S)) + 1/self.S # uniform at the start
+        self.next_states = next_states
+        self.nominal=np.zeros((self.S,self.A,self.NS)) + 1/self.NS # uniform at the start
+        self.centroids=centroids
+
+    def get_closest(self,state):
+
+        minDist=float("inf")
+        minIndex=None
+        for i,s in enumerate(self.states):
+            s = np.array(s)
+            d = np.sum(np.square(state - s))
+            if d < minDist:
+                minDist =d
+                minIndex = i
+        return minIndex
+
     def add_visits(self,trajectory):
-        for s_index, a_index, _r, _c, s_next, _grad,_grad_adv,_probs in trajectory:
-            s_next_index = self.states.index(s_next)
+        for s, a_index, _r, _c, s_next_index, _grad,_grad_adv,_probs in trajectory:
+            if self.centroids:
+                s_index = self.get_closest(s)
+            else:
+                s_index = self.states.index(s)
             self.data[s_index, a_index, s_next_index] += 1  # add trajectory to the data counts
     def set_params(self):
         self.visits = np.sum(self.data,
@@ -30,33 +51,32 @@ class DummyUncertaintySet(object):
         except Exception as e:
             print(self.nominal[s,a])
             print(e)
-        s_next=self.states[s_next_index]
+        s_next=self.next_states[s_next_index]
         return s_next, None, None
 
-class HoeffdingSet(object):
+class HoeffdingSet(BaseUncertaintySet):
     """
     uncertainty set based on Hoeffding; adds adversarial agent to solve the inner problem approximately
     """
     adversarial = True
-    def __init__(self,delta, states,actions, D_S, D_A, optimiser_theta,optimiser_lbda):
+    def __init__(self,delta, states,actions, next_states,D_S, D_A, optimiser_theta,optimiser_lbda,centroids=[]):
+        BaseUncertaintySet.__init__(self,states,actions,next_states,centroids)
         self.delta = delta # desired confidence level
-        self.S=len(states)
-        self.A=len(actions)
-        self.data = np.zeros((self.S,self.A,self.S))  # SxAxS frequency table
-        self.states=states
-        self.actions=actions
-        self.nominal=np.zeros((self.S,self.A,self.S)) + 1/self.S # uniform at the start
         self.alpha=np.zeros((self.S,self.A))
         self.D_S = D_S
         self.D_A = D_A
-        self.pi = StochasticPol(self.D_S+1,self.S) # +1 is for actions; S is output as we want output probs for each state
+        self.pi = StochasticPol(self.D_S+1,self.NS) # +1 is for actions; S is output as we want output probs for each state
         self.optimiser_theta = optimiser_theta
         self.optimiser_lbda  = optimiser_lbda
         self.lbda = tf.Variable(0.1)
 
     def add_visits(self,trajectory):
-        for s_index,a_index,_r,_c,s_next,_grad,_grad_adv,_probs in trajectory:
-            s_next_index = self.states.index(s_next)
+        for s,a_index,_r,_c,s_next,_grad,_grad_adv,_probs in trajectory:
+            if self.centroids:
+                s_index = self.get_closest(s)
+            else:
+                s_index = self.states.index(s)
+            s_next_index = self.next_states.index(s_next)
             self.data[s_index,a_index,s_next_index] += 1   # add trajectory to the data counts
     def set_params(self):
         """
@@ -78,21 +98,21 @@ class HoeffdingSet(object):
         :param a:
         :return:
         """
-        adversary_state=self.states[s]+(self.actions[a],)
-        a, grad, probs = self.pi.select_action(adversary_state)
+        adversary_state=list(self.states[s])+[self.actions[a]]
+        a, grad, probs = self.pi.select_action(adversary_state,deterministic=False)
         return probs,grad
 
     def random_state(self,s,a):
         probs,grad=self.random_probs(s,a)
-        s_next_index = np.random.choice(self.S,p=probs)
-        s_next=self.states[s_next_index]
+        s_next_index = np.random.choice(self.NS,p=probs)
+        s_next = self.next_states[s_next_index]
         return s_next,grad,probs
 
     def compute_alpha(self,s,a):
         """
         :return:
         """
-        return np.sqrt(2/self.visits[s,a]*np.log(self.S*self.A*2**self.S/self.delta))
+        return np.sqrt(2/self.visits[s,a]*np.log(self.S*self.A*2**self.NS/self.delta))
 
     def update_adversary(self,eta1,eta2,s,a,L,grad_adv,probs):
         """
@@ -104,15 +124,96 @@ class HoeffdingSet(object):
         :param delta_P: ||P - P_nominal||
         :return:
         """
-        delta_P = np.sum(np.abs(probs - self.nominal[s, a]))
+        if self.centroids:
+            s_index = self.get_closest(s)
+        else:
+            s_index = self.states.index(s)
+        delta_P = np.sum(np.abs(probs - self.nominal[s_index, a]))
         L_adv = L - self.lbda*delta_P   # minimise the original lagrangian s.t. constraints on the norm
         update = [eta1*L_adv*g for g in grad_adv]
         self.optimiser_theta.apply_gradients(zip(update, self.pi.params()))  # increase iteration by one
-        update_l = -eta2 * (delta_P - self.alpha[s,a])  # dL/d\lambda
+        update_l = -eta2 * (delta_P - self.alpha[s_index,a])  # dL/d\lambda
         self.optimiser_lbda.apply_gradients([(update_l, self.lbda)])  # increase iteration by one
         return K.eval(L_adv), K.eval(self.lbda)
         #print("L_adv ", L_adv)
         #print("lbda_adv", self.lbda)
+
+#
+# class BayesOptSet(object):
+#     """
+#     uncertainty set for even larger/continuous state spaces; adds adversarial agent to solve the inner problem approximately
+#     """
+#     adversarial = True
+#     def __init__(self,delta, states,actions, D_S, D_A, optimiser_theta,optimiser_lbda,GP_params):
+#         self.delta = delta # desired confidence level
+#         self.S=len(states)
+#         self.A=len(actions)
+#         self.data = np.zeros((self.S,self.A,self.S))  # SxAxS frequency table
+#         self.states=states
+#         self.actions=actions
+#         self.nominal=np.zeros((self.S,self.A,self.S)) + 1/self.S # uniform at the start
+#         self.alpha=np.zeros((self.S,self.A))
+#         self.D_S = D_S
+#         self.D_A = D_A
+#         self.pi = StochasticPol(self.D_S+1,self.S) # +1 is for actions; S is output as we want output probs for each state
+#         self.optimiser_theta = optimiser_theta
+#         self.optimiser_lbda  = optimiser_lbda
+#         self.lbda = tf.Variable(0.1)
+#         self.GP = GP(GP_params)
+#
+#     def add_visits(self,trajectory):
+#         for s,a,_r,_c,s_next,_grad,_grad_adv,_probs in trajectory:
+#             self.GP.add([s,a],s_next)
+#     def set_params(self):
+#         """
+#
+#         :param
+#         :return:
+#         """
+#         pass
+#     def random_probs(self,s,a):
+#         """
+#         :param s:
+#         :param a:
+#         :return:
+#         """
+#         adversary_state=self.states[s]+(self.actions[a],)
+#         a, grad, probs = self.pi.select_action(adversary_state,deterministic=False)
+#         return probs,grad
+#     def compute_alpha(self,sd):
+#         """
+#         :return:
+#         """
+#         return
+#     def random_state(self,s,a):
+#         probs,grad=self.random_probs(s,a)
+#         s_next_index = np.random.choice(self.S,p=probs)
+#         s_next=self.states[s_next_index]
+#         return s_next,grad,probs
+#
+#     def update_adversary(self,eta1,eta2,s,a,L,grad_adv,probs):
+#         """
+#         adversary to make the optimisation of the lagrangian as difficult as possible;
+#         min L s.t. \Delta P \leq alpha
+#         :param eta1: learning rate
+#         :param L: lagrangian of the actual CMDP
+#         :param grad_adv: gradient of the adversarial policy
+#         :param delta_P: ||P - P_nominal||
+#         :return:
+#         """
+#         M,S = self.GP.predict([s,a])
+#         nominal = M
+#         alpha = S #TODO is this the best?
+#         delta_P = np.sum(np.abs(probs - nominal))
+#         L_adv = L - self.lbda*delta_P   # minimise the original lagrangian s.t. constraints on the norm
+#         update = [eta1*L_adv*g for g in grad_adv]
+#         self.optimiser_theta.apply_gradients(zip(update, self.pi.params()))  # increase iteration by one
+#         update_l = -eta2 * (delta_P - alpha)  # dL/d\lambda
+#         self.optimiser_lbda.apply_gradients([(update_l, self.lbda)])  # increase iteration by one
+#         return K.eval(L_adv), K.eval(self.lbda)
+#         #print("L_adv ", L_adv)
+#         #print("lbda_adv", self.lbda)
+
 
 #
 #

@@ -18,13 +18,20 @@ class StochasticPol(object):
     def summary(self):
         return self.pi.summary()
 
-    def select_action(self,s):
-        with tf.GradientTape() as tape:
-            probs = self.pi(np.array([s]))[0]
-            grad = tape.gradient(probs, self.pi.trainable_weights)
-        probs = K.eval(probs)
-        a = np.random.choice(len(probs), p=probs)
-        pr = probs[a]
-        grad = [ g /pr for g in grad] # (and divide by the probability of the action to compensate for more frequent updates)
-        return a, grad, probs
+    def select_action(self,s, deterministic):
+
+            with tf.GradientTape() as tape:
+                probs = self.pi(np.array([s]))[0]
+                grad = tape.gradient(probs, self.pi.trainable_weights)
+            probs = K.eval(probs)
+            if deterministic:
+                return np.argmax(probs).item(), None, 1.0
+            else:
+                a = np.random.choice(len(probs), p=probs)
+                pr = probs[a]
+                grad = [g / pr for g in
+                        grad]  # (and divide by the probability of the action to compensate for more frequent updates)
+                return a, grad, probs
+
+
 
