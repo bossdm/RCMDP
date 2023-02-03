@@ -41,6 +41,7 @@ class RCPG(object):
         self.simlogfile=simlogfile
         self.gamma = self.real_CMDP.gamma
         self.d = self.real_CMDP.d
+        self.entropy_reg_constant = 100. # by default, can override it
 
     def train(self):
         for t in range(self.train_iterations):
@@ -61,13 +62,16 @@ class RCPG(object):
         C = 0
         self.n += 1  # count
         for step in trajectory[::-1]:
-            s, a, r, c, s_next, grad, grad_adv, probs_adv = step
+            s, a, r, c, s_next, grad, probs, grad_adv, probs_adv = step
             V = r + gamma * V
             C = c + gamma * C
             actual_lbda = tf.clip_by_value(tf.exp(self.lbda), clip_value_min=0, clip_value_max=10000)
+            logprobs=[0 if prob==0 else np.log(prob)*prob for prob in probs ]
+            entropy = - np.sum(logprobs)  # just to make sure it scales well use lambda here as well
+            # print("entropy ", K.eval(entropy))
             eta1 = self.lr1(self.n)
             eta2 = self.lr2(self.n)
-            L = -(V - actual_lbda * C)
+            L = -(V+self.entropy_reg_constant*entropy - actual_lbda * C)
             update = [eta1 * L * g for g in grad]  # dL/d\pi * d\pi/d\theta
             self.update_theta(update)
             update_l = -eta2 * (C - d)  # dL/d\lambda

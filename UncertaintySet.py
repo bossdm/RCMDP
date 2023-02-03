@@ -32,7 +32,7 @@ class BaseUncertaintySet(object):
         return minIndex
 
     def add_visits(self,trajectory):
-        for s, a_index, _r, _c, s_next_index, _grad,_grad_adv,_probs in trajectory:
+        for s, a_index, _r, _c, s_next_index, _grad,_probs,_grad_adv,_probs in trajectory:
             if self.centroids:
                 s_index = self.get_closest(s)
             else:
@@ -59,7 +59,7 @@ class HoeffdingSet(BaseUncertaintySet):
     uncertainty set based on Hoeffding; adds adversarial agent to solve the inner problem approximately
     """
     adversarial = True
-    def __init__(self,delta, states,actions, next_states,D_S, D_A, optimiser_theta,optimiser_lbda,centroids=[]):
+    def __init__(self,delta, states,actions, next_states,D_S, D_A, optimiser_theta,optimiser_lbda,centroids=[],writefile=None):
         BaseUncertaintySet.__init__(self,states,actions,next_states,centroids)
         self.delta = delta # desired confidence level
         self.alpha=np.zeros((self.S,self.A))
@@ -69,9 +69,11 @@ class HoeffdingSet(BaseUncertaintySet):
         self.optimiser_theta = optimiser_theta
         self.optimiser_lbda  = optimiser_lbda
         self.lbda = tf.Variable(0.1)
+        self.writefile=writefile
+        self.U_updates=0
 
     def add_visits(self,trajectory):
-        for s,a_index,_r,_c,s_next,_grad,_grad_adv,_probs in trajectory:
+        for s,a_index,_r,_c,s_next,_grad,_probs,_grad_adv,_probs in trajectory:
             if self.centroids:
                 s_index = self.get_closest(s)
             else:
@@ -84,13 +86,21 @@ class HoeffdingSet(BaseUncertaintySet):
         :param
         :return:
         """
+        if self.writefile is not None:
+            f = open(self.writefile+str(self.U_updates)+".txt","w")
+            self.U_updates+=1
         self.visits = np.sum(self.data,axis=2) # sum over third axis (don't care about next state, only the sa-visitations
         for s_index in range(self.S):
             for a_index in range(self.A):
                 if self.visits[s_index, a_index] > 0: #otherwise keep at uniform random
                     self.nominal[s_index, a_index] = self.data[s_index, a_index] / self.visits[s_index, a_index]
                     self.alpha[s_index,a_index] = self.compute_alpha(s_index,a_index)
-                    print(r"Hoeffding uncertainty set for ",  (s_index,a_index), r"has $\bar{\pi}$=", self.nominal[s_index,a_index], r" and $\alpha$=",self.alpha[s_index,a_index])
+                if self.writefile is not None:
+                        f.write("%d \t %d \t %d \t %.4f"%(s_index,a_index,self.visits[s_index,a_index],self.alpha[s_index,a_index]))
+                        for s_next_index in range(self.NS):
+                            f.write("\t %.4f"%(self.nominal[s_index, a_index,s_next_index]))
+                        f.write("\n")
+        f.close()
 
     def random_probs(self,s,a):
         """
