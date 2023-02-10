@@ -21,7 +21,7 @@ if __name__ == "__main__":
     args.learning_rate2=0.01
     args.folder="/home/david/PycharmProjects/RCMDP/Logs/"
     #d=200   --> budget way too big so solution has C(theta) - d < 0 (inactive constraint) --> see that lbda converges to 0
-    d=1
+    d=[1]
     T=200
     D_S=2  #(x,y) coordinates
     D_A=4
@@ -42,7 +42,7 @@ if __name__ == "__main__":
         x, y = s_next
         xx = np.clip(x ,0,4)
         yy = np.clip(y,0,4)
-        return 1.0 if xx - yy > 1 else 0.0  # go vertical first rather than horizontal first
+        return np.array([1.0],dtype=float) if xx - yy > 1 else np.array([0.0],dtype=float)  # go vertical first rather than horizontal first
 
     def P_real(s, a):  # try to reach the
         x, y = s

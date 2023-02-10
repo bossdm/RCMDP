@@ -108,7 +108,7 @@ class HoeffdingSet(BaseUncertaintySet):
         :param a:
         :return:
         """
-        adversary_state=list(self.states[s])+[self.actions[a]]
+        adversary_state = list(self.states[s]) + [self.actions[a]]
         a, grad, probs = self.pi.select_action(adversary_state,deterministic=False)
         return probs,grad
 

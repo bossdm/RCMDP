@@ -31,7 +31,6 @@ class RCPG(object):
         self.sim_iterations = sim_iterations
         self.real_iterations = real_iterations
         self.train_iterations = train_iterations
-        self.lbda = tf.Variable(0.1)
         self.lr1=lr1
         self.lr2=lr2
         self.n = 0# count the number of iterations
@@ -41,7 +40,9 @@ class RCPG(object):
         self.simlogfile=simlogfile
         self.gamma = self.real_CMDP.gamma
         self.d = self.real_CMDP.d
-        self.entropy_reg_constant = 100. # by default, can override it
+        lbda=np.zeros(len(self.d))
+        self.lbda = tf.Variable(lbda,dtype=float)
+        self.entropy_reg_constant = 0.1 # by default, can override it
 
     def train(self):
         for t in range(self.train_iterations):
@@ -71,19 +72,23 @@ class RCPG(object):
             # print("entropy ", K.eval(entropy))
             eta1 = self.lr1(self.n)
             eta2 = self.lr2(self.n)
-            L = -(V+self.entropy_reg_constant*entropy - actual_lbda * C)
+            L = -(V+self.entropy_reg_constant*entropy - K.sum(actual_lbda * C))
+            # print(C)
+            # print(L)
             update = [eta1 * L * g for g in grad]  # dL/d\pi * d\pi/d\theta
             self.update_theta(update)
+            print(C)
+            print(d)
             update_l = -eta2 * (C - d)  # dL/d\lambda
             self.update_lbda(update_l)
             if self.uncertainty_set.adversarial:  # min L s.t. ||P-P*|| <= alpha
                 # try to make the agent fail the objective
                 L_adv, lbda_adv = self.uncertainty_set.update_adversary(eta1, eta2, s, a, L, grad_adv, probs_adv)
                 self.logfile.write(
-                    "%.4f \t %.4f \t %.4f \t %.4f \n" % (K.eval(L), K.eval(actual_lbda), L_adv, lbda_adv))
+                    "%.4f \t %s \t %.4f \t %s \n" % (K.eval(L), str(K.eval(actual_lbda)), L_adv, str(lbda_adv)))
                 self.logfile.flush()
             else:
-                self.logfile.write("%.4f \t %.4f \n" % (K.eval(L), K.eval(actual_lbda)))
+                self.logfile.write("%.4f \t %s \n" % (K.eval(L), str(K.eval(actual_lbda))))
                 self.logfile.flush()
             # print("L",L)
             # print("lbda",actual_lbda)

@@ -9,7 +9,7 @@ class BaseCMDP(object):
         self.d = d
 
 class CMDP(BaseCMDP):
-    def __init__(self,p_0,r,c,P,states,actions,gamma,T,d,terminals,logfile):
+    def __init__(self,p_0,r,c,P,states,actions,next_states,gamma,T,d,terminals,logfile):
         BaseCMDP.__init__(self,states,actions,gamma,d)
         self.p_0=p_0
         self.r = r
@@ -19,6 +19,7 @@ class CMDP(BaseCMDP):
         self.terminals=terminals
         self.logfile=logfile
         self.logfile.write("R \t C \n")
+        self.next_states=next_states # used to initalise uncertainty set's outcomes
 
     def step(self,s,pi,test):
         a_index, grad,probs = pi.select_action(s,deterministic=test)
@@ -47,18 +48,17 @@ class CMDP(BaseCMDP):
         return trajectory
 
 class RobustCMDP(CMDP):
-    def __init__(self,p_0,r,c,P,states,actions,gamma,T,d,terminals,logfile,uncertainty_set):
-        CMDP.__init__(self,p_0,r,c,P,states,actions,gamma,T,d,terminals,logfile)
+    def __init__(self,p_0,r,c,P,states,actions,next_states,gamma,T,d,terminals,logfile,uncertainty_set):
+        CMDP.__init__(self,p_0,r,c,P,states,actions,next_states,gamma,T,d,terminals,logfile)
         self.uncertainty_set = uncertainty_set
     @classmethod
     def from_CMDP(cls,cmdp,logfile,uncertainty_set):
-        rcmdp = RobustCMDP(cmdp.p_0,cmdp.r,cmdp.c,cmdp.P,cmdp.states,cmdp.actions,cmdp.gamma,cmdp.T,cmdp.d,cmdp.terminals,logfile,uncertainty_set)
+        rcmdp = RobustCMDP(cmdp.p_0,cmdp.r,cmdp.c,cmdp.P,cmdp.states,cmdp.actions,cmdp.next_states,cmdp.gamma,cmdp.T,cmdp.d,cmdp.terminals,logfile,uncertainty_set)
         return rcmdp
     def step(self,s,pi,test):
         s_index = self.uncertainty_set.states.index(s)
         a_index, grad, probs = pi.select_action(s,deterministic=test)
-        s_next_index, grad_adv, probs_adv = self.uncertainty_set.random_state(s_index, a_index)
-        s_next=self.uncertainty_set.states[s_next_index]
+        s_next, grad_adv, probs_adv = self.uncertainty_set.random_state(s_index, a_index)
         c = self.c(s_next)
         r = self.r(s_next)
-        return (s_index, a_index, r, c, s_next, grad, probs, grad_adv, probs_adv)
+        return (s, a_index, r, c, s_next, grad, probs, grad_adv, probs_adv)
