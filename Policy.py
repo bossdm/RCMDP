@@ -4,6 +4,7 @@ import tensorflow as tf
 from keras.models import Sequential
 from keras.layers import Dense
 import keras.backend as K
+from keras.models import load_model
 import numpy as np
 
 class StochasticPol(object):
@@ -32,6 +33,14 @@ class StochasticPol(object):
                 grad = [g / pr for g in
                         grad]  # (and divide by the probability of the action to compensate for more frequent updates)
                 return a, grad, probs
+
+    def save(self,savefile):
+        print("saving policy at ",savefile)
+        self.pi.save(savefile)
+
+    def load(self,loadfile):
+        print("loading policy from ", loadfile)
+        self.pi = load_model(loadfile)
 
 
 

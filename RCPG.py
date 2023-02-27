@@ -77,8 +77,8 @@ class RCPG(object):
             # print(L)
             update = [eta1 * L * g for g in grad]  # dL/d\pi * d\pi/d\theta
             self.update_theta(update)
-            print(C)
-            print(d)
+            print("cost ",C)
+            print("budget ",d)
             update_l = -eta2 * (C - d)  # dL/d\lambda
             self.update_lbda(update_l)
             if self.uncertainty_set.adversarial:  # min L s.t. ||P-P*|| <= alpha
@@ -107,6 +107,19 @@ class RCPG(object):
     def update_lbda(self,grad_lbda):
         self.optimiser_lbda.apply_gradients([(grad_lbda, self.lbda)])  # increase iteration by one
 
+    def load(self,loadfile):
+        self.pi.load(loadfile+"_pol")
+        self.pi.load(loadfile + "_pol")
+        if self.uncertainty_set.adversarial:
+            self.uncertainty_set.pi.load(loadfile + "_adversary")
+            self.uncertainty_set.pi.load(loadfile + "_adversary")
+
+    def save(self,loadfile):
+        self.pi.save(loadfile+"_pol")
+        self.pi.save(loadfile + "_pol")
+        if self.uncertainty_set.adversarial:
+            self.uncertainty_set.pi.save(loadfile + "_adversary")
+            self.uncertainty_set.pi.save(loadfile + "_adversary")
 
 
 
