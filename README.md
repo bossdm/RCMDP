@@ -7,3 +7,8 @@ where scalability is due to avoiding the inner problem in favour of a perturbati
 Tested on python 3.8
 
 Dependencies and installation, see "install" file
+
+
+Run the algorithm on a simple maze:
+
+``python Benchmark_SimpleMaze.py``
