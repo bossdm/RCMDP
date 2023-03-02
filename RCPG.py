@@ -6,6 +6,8 @@
 from UncertaintySet import *
 from CMDP import *
 
+PRINTING=False
+
 class RCPG(object):
     def __init__(self,pi, real_CMDP, uncertainty_set,optimiser_theta,optimiser_lbda,
                  sim_iterations,real_iterations,train_iterations,lr1,lr2,logfile,simlogfile):
@@ -77,8 +79,9 @@ class RCPG(object):
             # print(L)
             update = [eta1 * L * g for g in grad]  # dL/d\pi * d\pi/d\theta
             self.update_theta(update)
-            print("cost ",C)
-            print("budget ",d)
+            if PRINTING:
+                print("cost ",C)
+                print("budget ",d)
             update_l = -eta2 * (C - d)  # dL/d\lambda
             self.update_lbda(update_l)
             if self.uncertainty_set.adversarial:  # min L s.t. ||P-P*|| <= alpha
