@@ -5,6 +5,7 @@
 
 from UncertaintySet import *
 from CMDP import *
+import pickle
 
 PRINTING=False
 
@@ -111,18 +112,17 @@ class RCPG(object):
         self.optimiser_lbda.apply_gradients([(grad_lbda, self.lbda)])  # increase iteration by one
 
     def load(self,loadfile):
-        self.pi.load(loadfile+"_pol")
-        self.pi.load(loadfile + "_pol")
-        if self.uncertainty_set.adversarial:
-            self.uncertainty_set.pi.load(loadfile + "_adversary")
-            self.uncertainty_set.pi.load(loadfile + "_adversary")
-
+        self.pi.load(loadfile+"/pol")
+        lbda=pickle.load(open(loadfile+"/objects.pkl","rb"))
+        self.lbda = tf.Variable(lbda, dtype=float)
+        self.uncertainty_set.load(loadfile)
+        print("lambda ", K.eval(self.lbda))
     def save(self,loadfile):
-        self.pi.save(loadfile+"_pol")
-        self.pi.save(loadfile + "_pol")
-        if self.uncertainty_set.adversarial:
-            self.uncertainty_set.pi.save(loadfile + "_adversary")
-            self.uncertainty_set.pi.save(loadfile + "_adversary")
+        self.pi.save(loadfile+"/pol")
+        self.uncertainty_set.save(loadfile)
+        lbda=K.eval(self.lbda)
+        print("lambda ",lbda)
+        pickle.dump(lbda,open(loadfile+"/objects.pkl","wb"))
 
 
 

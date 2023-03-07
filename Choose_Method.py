@@ -27,6 +27,19 @@ def choose_method(method_name,alpha1,alpha2,folder,D_S,D_A,pi, real_cmdp, sim_it
                                        writefile=folder+"/uncertaintyset")
         method = RCPG(pi, real_cmdp, uncertainty_set, opt, opt2, sim_iterations, real_iterations,
                     train_iterations, lr1=lr_proportional, lr2=lr_sixfifths,logfile=logfile,simlogfile=simlogfile)
+    elif method_name=="random":
+        actions=[i for i in range(len(real_cmdp.actions))]
+        method=BaseUncertaintySet(states=real_cmdp.states,actions=actions,next_states=real_cmdp.next_states)
+    elif method_name=="random_hoeffding":
+        actions = [i for i in range(len(real_cmdp.actions))]
+        opt_adv = SGD(learning_rate=alpha1)  # note: learning rate here is further multiplied by the functions above
+        opt2_adv = SGD(learning_rate=alpha2)  # note: learning rate here is further multiplied by the functions above
+        method = HoeffdingSet(delta=0.999, states=real_cmdp.states, actions=actions,
+                                       next_states=real_cmdp.next_states,
+                                       D_S=D_S, D_A=D_A,
+                                       optimiser_theta=opt_adv, optimiser_lbda=opt2_adv, centroids=[],
+                                       writefile=folder + "/uncertaintyset")
+
     else:
         raise Exception("method name " +str(method_name)+ " not yet supported")
 

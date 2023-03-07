@@ -3,8 +3,8 @@ import numpy as np
 from Policy import StochasticPol
 import tensorflow as tf
 import keras.backend as K
-
-
+import pickle
+from Utils import check_folder
 
 class BaseUncertaintySet(object):
     adversarial = False
@@ -53,6 +53,17 @@ class BaseUncertaintySet(object):
             print(e)
         s_next=self.next_states[s_next_index]
         return s_next, None, None
+
+    def save(self,loadfile):
+        folder=loadfile+"/uncertaintyset/"
+        check_folder(folder)
+        objects=(self.S,self.A,self.NS,self.data,self.states,self.actions,self.next_states,self.nominal,self.centroids)
+        pickle.dump(objects,open(loadfile+"/uncertaintyset.pkl","wb"))
+    def load(self,loadfile):
+        folder=loadfile+"/uncertaintyset/"
+        check_folder(folder)
+        self.S,self.A,self.NS,self.data,self.states,self.actions,self.next_states,self.nominal,self.centroids=pickle.load(open(loadfile+"/uncertaintyset.pkl","wb"))
+
 
 class HoeffdingSet(BaseUncertaintySet):
     """
@@ -147,6 +158,26 @@ class HoeffdingSet(BaseUncertaintySet):
         return K.eval(L_adv), K.eval(self.lbda)
         #print("L_adv ", L_adv)
         #print("lbda_adv", self.lbda)
+
+    def save(self,loadfile):
+        folder=loadfile+"/uncertaintyset/"
+        check_folder(folder)
+        objects=(self.S,self.A,self.NS,self.data,self.states,self.actions,self.next_states,self.nominal,self.centroids,
+                 self.delta,self.alpha,self.D_S,self.D_A, K.eval(self.lbda),self.U_updates)
+        print("objects:")
+        print(objects)
+        pickle.dump(objects,open(folder+"objects.pkl","wb"))
+        self.pi.save(folder+"adversary")
+    def load(self,loadfile):
+        folder=loadfile+"/uncertaintyset/"
+        check_folder(folder)
+        objects=pickle.load(open(folder+"objects.pkl","rb"))
+        self.S, self.A, self.NS, self.data, self.states, self.actions, self.next_states, self.nominal, self.centroids, \
+            self.delta, self.alpha, self.D_S, self.D_A, lbda, self.U_updates = objects
+        print("objects:")
+        print(objects)
+        self.lbda.assign(lbda)
+        self.pi.load(folder+"adversary")
 
 #
 # class BayesOptSet(object):
@@ -286,6 +317,3 @@ class HoeffdingSet(BaseUncertaintySet):
 #             print(e)
 #         s_next = self.states[s_next_index]
 #         return s_next
-
-
-
