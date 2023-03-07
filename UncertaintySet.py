@@ -32,11 +32,12 @@ class BaseUncertaintySet(object):
         return minIndex
 
     def add_visits(self,trajectory):
-        for s, a_index, _r, _c, s_next_index, _grad,_probs,_grad_adv,_probs in trajectory:
+        for s, a_index, _r, _c, s_next, _grad,_probs,_grad_adv,_probs in trajectory:
             if self.centroids:
                 s_index = self.get_closest(s)
             else:
                 s_index = self.states.index(s)
+            s_next_index = self.next_states.index(s_next)
             self.data[s_index, a_index, s_next_index] += 1  # add trajectory to the data counts
     def set_params(self):
         self.visits = np.sum(self.data,
@@ -47,7 +48,7 @@ class BaseUncertaintySet(object):
                     self.nominal[s_index, a_index] = self.data[s_index, a_index] / self.visits[s_index, a_index]
     def random_state(self,s,a):
         try:
-            s_next_index = np.random.choice(self.S,p=self.nominal[s,a])
+            s_next_index = np.random.choice(self.NS,p=self.nominal[s,a])
         except Exception as e:
             print(self.nominal[s,a])
             print(e)
@@ -62,7 +63,8 @@ class BaseUncertaintySet(object):
     def load(self,loadfile):
         folder=loadfile+"/uncertaintyset/"
         check_folder(folder)
-        self.S,self.A,self.NS,self.data,self.states,self.actions,self.next_states,self.nominal,self.centroids=pickle.load(open(loadfile+"/uncertaintyset.pkl","wb"))
+        self.S,self.A,self.NS,self.data,self.states,self.actions,\
+            self.next_states,self.nominal,self.centroids=pickle.load(open(loadfile+"/uncertaintyset.pkl","rb"))
 
 
 class HoeffdingSet(BaseUncertaintySet):
