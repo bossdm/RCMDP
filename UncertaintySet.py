@@ -164,8 +164,8 @@ class HoeffdingSet(BaseUncertaintySet):
         check_folder(folder)
         objects=(self.S,self.A,self.NS,self.data,self.states,self.actions,self.next_states,self.nominal,self.centroids,
                  self.delta,self.alpha,self.D_S,self.D_A, K.eval(self.lbda),self.U_updates)
-        print("objects:")
-        print(objects)
+        #print("objects:")
+        #print(objects)
         pickle.dump(objects,open(folder+"objects.pkl","wb"))
         self.pi.save(folder+"adversary")
     def load(self,loadfile):
@@ -174,8 +174,8 @@ class HoeffdingSet(BaseUncertaintySet):
         objects=pickle.load(open(folder+"objects.pkl","rb"))
         self.S, self.A, self.NS, self.data, self.states, self.actions, self.next_states, self.nominal, self.centroids, \
             self.delta, self.alpha, self.D_S, self.D_A, lbda, self.U_updates = objects
-        print("objects:")
-        print(objects)
+        #print("objects:")
+        #print(objects)
         self.lbda.assign(lbda)
         self.pi.load(folder+"adversary")
 
