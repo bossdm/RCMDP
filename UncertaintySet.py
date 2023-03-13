@@ -165,14 +165,14 @@ class HoeffdingSet(BaseUncertaintySet):
         #print("objects:")
         #print(objects)
         pickle.dump(objects,open(folder+"objects.pkl","wb"))
-        self.critic.save(folder + "critic")
+        self.C.save(folder + "critic")
     def load(self,loadfile):
         folder=loadfile+"/uncertaintyset/"
         check_folder(folder)
         objects=pickle.load(open(folder+"objects.pkl","rb"))
         self.S, self.A, self.NS, self.data, self.states, self.actions, self.next_states, self.nominal, self.centroids, \
             self.delta, self.alpha, self.D_S, self.D_A, self.U_updates = objects
-        self.critic.load(folder+"critic")
+        self.C.load(folder+"critic")
         #print("objects:")
         #print(objects)
 
