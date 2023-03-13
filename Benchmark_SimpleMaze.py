@@ -16,7 +16,7 @@ parser.add_argument('--folder',dest="folder",type=str)
 args = parser.parse_args()
 
 if __name__ == "__main__":
-    args.method_name="RCPG_Hoeffding"
+    args.method_name="AdversarialRCPG_Hoeffding"
     args.learning_rate=0.10
     args.learning_rate2=0.01
     args.folder="/home/david/PycharmProjects/RCMDP/Logs/"

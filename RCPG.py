@@ -91,11 +91,19 @@ class RCPG(object):
                 self.logfile.write(
                     "%.4f \t %s \t %.4f \t %s \n" % (K.eval(L), str(K.eval(actual_lbda)), L_adv, str(lbda_adv)))
                 self.logfile.flush()
+            elif self.uncertainty_set.critic:
+                # add info to the critic
+                self.uncertainty_set.update_critic(s, C)
+                self.logfile.write(
+                    "%.4f \t %s  \n" % (K.eval(L), str(K.eval(actual_lbda))))
+                self.logfile.flush()
             else:
                 self.logfile.write("%.4f \t %s \n" % (K.eval(L), str(K.eval(actual_lbda))))
                 self.logfile.flush()
             # print("L",L)
             # print("lbda",actual_lbda)
+        if self.uncertainty_set.critic:
+            self.uncertainty_set.train_critic()
     def offline_optimisation(self):
         self.sim_CMDP = RobustCMDP.from_CMDP(self.real_CMDP,self.simlogfile,self.uncertainty_set)
         for it in range(self.sim_iterations):
