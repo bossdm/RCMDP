@@ -89,8 +89,9 @@ class HoeffdingSet(BaseUncertaintySet):
     def set_cumulativecost(self): # keep dict of cost of states in exactly the order as the states occur and are indexed
         self.cumulativecost_dict = OrderedDict([(i,self.C.predict([state])) for i,state in enumerate(self.states)])
     def update_critic(self,x,y):
-        print("x", x)
-        print("y", y)
+        if PRINTING:
+            print("x", x)
+            print("y", y)
         self.C.add_to_batch(x,y)
     def train_critic(self):
         self.C.train()
@@ -100,8 +101,11 @@ class HoeffdingSet(BaseUncertaintySet):
             if self.centroids:
                 s_index = self.get_closest(s)
             else:
-                s_index = self.states.index(s)
-            s_next_index = self.next_states.index(s_next)
+                s_index = self.states.index(s)      # note: this uncertainty set always assumes the same state space for s and s_next
+            if self.centroids:
+                s_next_index = self.get_closest(s)
+            else:
+                s_next_index = self.next_states.index(s)
             self.data[s_index,a_index,s_next_index] += 1   # add trajectory to the data counts
     def set_params(self):
         """
