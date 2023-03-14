@@ -16,7 +16,7 @@ parser.add_argument('--folder',dest="folder",type=str)
 args = parser.parse_args()
 
 if __name__ == "__main__":
-    args.method_name="AdversarialRCPG"
+    args.method_name="AdversarialRCPG_Hoeffding"
     args.learning_rate=0.10
     args.learning_rate2=0.01
     args.folder="/home/david/PycharmProjects/RCMDP/Logs/"
@@ -25,6 +25,7 @@ if __name__ == "__main__":
     T=200
     D_S=2  #(x,y) coordinates
     D_A=4
+    D_C=len(d)
     #S=25 # 5 by 5 grid
     #A=4  # up,down,right, or left
     actions=[[-1,0],[1,0],[0,1],[0,-1]]
@@ -65,7 +66,7 @@ if __name__ == "__main__":
     test_its = 100
     gamma = 0.99
 
-    method = choose_method(args.method_name,args.learning_rate,args.learning_rate2,args.folder,D_S,D_A,pi, real_cmdp, sim_iterations, real_iterations,
+    method = choose_method(args.method_name,args.learning_rate,args.learning_rate2,args.folder,D_S,D_A,D_C,pi, real_cmdp, sim_iterations, real_iterations,
                     train_iterations)
     method.train()
     for i in range(test_its):

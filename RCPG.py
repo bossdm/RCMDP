@@ -93,7 +93,7 @@ class RCPG(object):
             eta1 = self.lr1(self.n)
             eta2 = self.lr2(self.n)
             L,actual_lbda = self.update_policy(V,C,d,probs,grad,eta1,eta2)
-            if self.uncertainty_set.adversarial:  # min L s.t. ||P-P*|| <= alpha
+            if self.uncertainty_set.adversarial:  # min L s.t. ||P-\hat{P}|| <= alpha
                 # try to make the agent fail the objective
                 L_adv, lbda_adv = self.uncertainty_set.update_adversary(eta1, eta2, s, a, L, grad_adv, probs_adv)
                 self.logfile.write(
@@ -111,7 +111,8 @@ class RCPG(object):
             # print("L",L)
             # print("lbda",actual_lbda)
         if self.uncertainty_set.critic:
-            self.uncertainty_set.train_critic()
+            l = actual_lbda if self.uncertainty_set.using_lbda else None
+            self.uncertainty_set.train_critic(l)
 
         if PRINTING:
             print("value ", V)

@@ -72,7 +72,7 @@ class BaseUncertaintySet(object):
 
 class HoeffdingSet(BaseUncertaintySet):
 
-    def __init__(self,delta, states,actions, next_states,D_S, D_A, centroids=[],writefile=None):
+    def __init__(self,using_lbda,delta, states,actions, next_states,D_S, D_A,D_C,centroids=[],writefile=None):
         BaseUncertaintySet.__init__(self,states,actions,next_states,centroids)
         self.critic = True
         self.adversarial = False
@@ -83,19 +83,45 @@ class HoeffdingSet(BaseUncertaintySet):
         self.writefile=writefile
         self.U_updates=0
         self.batch = []
-        self.C = Critic(self.D_S)
-        self.set_cumulativecost()
+        self.C = Critic(self.D_S,D_C)
+        self.using_lbda = using_lbda
+        self.set_cumulativecost(lbda=None) # initialisation never uses lambda
 
-    def set_cumulativecost(self): # keep dict of cost of states in exactly the order as the states occur and are indexed
-        self.cumulativecost_dict = OrderedDict([(i,self.C.predict([state])) for i,state in enumerate(self.states)])
-    def update_critic(self,x,y):
+    def set_cumulativecost(self,lbda): # keep dict of cost of states in exactly the order as the states occur and are indexed
+        self.cumulativecost_dict = OrderedDict([(i,self.cumulativecost(state,lbda)) for i,state in enumerate(self.states)])
+    def cumulativecost(self,state,lbda):
+        """
+        predict cumulative cost(s) from the given state.
+        if a single cost, then direct prediction from the critic network
+        if multiple costs, these are reduced to a single number by; a) a weighted sum of the Lagrangian multiplers is taken;
+        or b) a simple sum
+        """
+
+        Costs = self.C.predict([state])[0]
+
+        if len(Costs) == 1:
+            s = Costs[0]
+        elif len(Costs) > 1:
+            if lbda is None:
+                s = sum(Costs)
+            else:
+                s = K.eval(K.sum(lbda*Costs))
+        else:
+            raise Exception("no cost vector should have zero length")
         if PRINTING:
-            print("x", x)
-            print("y", y)
+            if lbda is not None:
+                print("lbda ",K.eval(lbda))
+            print("Critic costs ", Costs)
+            print("summed costs ", s)
+        return s
+    def update_critic(self,x,y):
+        # if PRINTING:
+        #     print("x", x)
+        #     print("y", y)
         self.C.add_to_batch(x,y)
-    def train_critic(self):
+    def train_critic(self,lbda):
         self.C.train()
-        self.set_cumulativecost()
+        self.set_cumulativecost(lbda)
     def add_visits(self,trajectory):
         for s,a_index,_r,_c,s_next,_grad,_probs,_grad_adv,_probs in trajectory:
             if self.centroids:
@@ -143,10 +169,10 @@ class HoeffdingSet(BaseUncertaintySet):
             P[k] -= sub
             eps -= sub
             i -= 1
-        if PRINTING:
-            print("costs ", self.cumulativecost_dict)
-            print("nominal ", self.nominal[s,a])
-            print("P ", P)
+        # if PRINTING:
+        #     print("costs ", self.cumulativecost_dict)
+        #     print("nominal ", self.nominal[s,a])
+        #     print("P ", P)
         return P
     def random_state(self,s,a):
         probs=self.solve_innerproblem(s,a)

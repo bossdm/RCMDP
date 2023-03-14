@@ -9,10 +9,10 @@ import numpy as np
 
 class Critic(object):
 
-    def __init__(self,D_S):
+    def __init__(self,D_S,D_C):
         self.C = Sequential()
         self.C.add(Dense(20, name="hidden1",activation="relu",kernel_initializer='uniform', input_shape=(D_S,)))
-        self.C.add(Dense(1, name="output",activation="linear"))
+        self.C.add(Dense(D_C, name="output",activation="linear"))
         self.C.compile(optimizer="rmsprop",loss="MSE")
         self.batch_x = []
         self.batch_y = []
