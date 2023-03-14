@@ -61,6 +61,27 @@ class RCPG(object):
             trajectory = self.real_CMDP.episode(self.pi,test=False)
             self.uncertainty_set.add_visits(trajectory)
         self.uncertainty_set.set_params()
+    def update_policy(self,V, C, d, probs, grad, eta1,eta2):
+        logprobs = [0 if prob == 0 else np.log(prob) * prob for prob in probs]
+        entropy = - np.sum(logprobs)  # just to make sure it scales well use lambda here as well
+        # print("entropy ", K.eval(entropy))
+
+        if self.optimiser_lbda is not None:
+            actual_lbda = tf.clip_by_value(tf.exp(self.lbda), clip_value_min=0, clip_value_max=10000)
+            L = -(V+self.entropy_reg_constant*entropy - K.sum(actual_lbda * C))
+            # print(C)
+            # print(L)
+            update = [eta1 * L * g for g in grad]  # dL/d\pi * d\pi/d\theta
+            self.update_theta(update)
+            update_l = -eta2 * (C - d)  # dL/d\lambda
+            self.update_lbda(update_l)
+        else:
+            L = -(V + self.entropy_reg_constant * entropy)
+            update = [eta1 * L * g for g in grad]  # dL/d\pi * d\pi/d\theta
+            self.update_theta(update)
+            actual_lbda=None
+        return L, actual_lbda
+
     def update(self,trajectory,gamma,d):
         V = 0
         C = 0
@@ -69,22 +90,9 @@ class RCPG(object):
             s, a, r, c, s_next, grad, probs, grad_adv, probs_adv = step
             V = r + gamma * V
             C = c + gamma * C
-            actual_lbda = tf.clip_by_value(tf.exp(self.lbda), clip_value_min=0, clip_value_max=10000)
-            logprobs=[0 if prob==0 else np.log(prob)*prob for prob in probs ]
-            entropy = - np.sum(logprobs)  # just to make sure it scales well use lambda here as well
-            # print("entropy ", K.eval(entropy))
             eta1 = self.lr1(self.n)
             eta2 = self.lr2(self.n)
-            L = -(V+self.entropy_reg_constant*entropy - K.sum(actual_lbda * C))
-            # print(C)
-            # print(L)
-            update = [eta1 * L * g for g in grad]  # dL/d\pi * d\pi/d\theta
-            self.update_theta(update)
-            if PRINTING:
-                print("cost ",C)
-                print("budget ",d)
-            update_l = -eta2 * (C - d)  # dL/d\lambda
-            self.update_lbda(update_l)
+            L,actual_lbda = self.update_policy(V,C,d,probs,grad,eta1,eta2)
             if self.uncertainty_set.adversarial:  # min L s.t. ||P-P*|| <= alpha
                 # try to make the agent fail the objective
                 L_adv, lbda_adv = self.uncertainty_set.update_adversary(eta1, eta2, s, a, L, grad_adv, probs_adv)
@@ -104,6 +112,12 @@ class RCPG(object):
             # print("lbda",actual_lbda)
         if self.uncertainty_set.critic:
             self.uncertainty_set.train_critic()
+
+        if PRINTING:
+            print("value ", V)
+            print("cost ", C)
+            print("budget ", d)
+
     def offline_optimisation(self):
         self.sim_CMDP = RobustCMDP.from_CMDP(self.real_CMDP,self.simlogfile,self.uncertainty_set)
         for it in range(self.sim_iterations):

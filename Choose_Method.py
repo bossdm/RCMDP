@@ -25,6 +25,13 @@ def choose_method(method_name,alpha1,alpha2,folder,D_S,D_A,pi, real_cmdp, sim_it
         opt2 = SGD(learning_rate=alpha2)  # note: learning rate here is further multiplied by the functions above
         method = RCPG(pi, real_cmdp, uncertainty_set, opt, opt2, sim_iterations, real_iterations,
                     train_iterations, lr1=lr_proportional, lr2=lr_sixfifths, logfile=logfile,simlogfile=simlogfile)
+    elif method_name=="PG":
+        actions=[i for i in range(len(real_cmdp.actions))]
+        uncertainty_set=BaseUncertaintySet(states=real_cmdp.states,actions=actions,next_states=real_cmdp.next_states)
+        opt = SGD(learning_rate=alpha1)  # note: learning rate here is further multiplied by the functions above
+        opt2 = None  # no constraints so no second optimiser
+        method = RCPG(pi, real_cmdp, uncertainty_set, opt, opt2, sim_iterations, real_iterations,
+                    train_iterations, lr1=lr_proportional, lr2=lr_sixfifths, logfile=logfile,simlogfile=simlogfile)
     elif method_name=="AdversarialRCPG_Hoeffding":
         actions = [i for i in range(len(real_cmdp.actions))]
         opt = SGD(learning_rate=alpha1)  # note: learning rate here is further multiplied by the functions above
