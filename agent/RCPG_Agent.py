@@ -1,9 +1,6 @@
 
 import sys, os
-RCMDP_path=os.environ["PROJECT_DIR"]+'/RCMDP/'
-sys.path.extend([RCMDP_path])
-
-from RCPG import *
+from RCMDP.RCPG import *
 
 class RCPG_Agent(RCPG):
     """

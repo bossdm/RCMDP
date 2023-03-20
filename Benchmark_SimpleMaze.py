@@ -1,7 +1,7 @@
 
 
-from State import InitialDiscreteState
-from Choose_Method import *
+from RCMDP.State import InitialDiscreteState
+from RCMDP.Choose_Method import *
 import os
 import argparse
 import csv

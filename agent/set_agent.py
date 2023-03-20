@@ -1,9 +1,7 @@
-import sys, os
-RCMDP_path=os.environ["PROJECT_DIR"]+'/RCMDP/'
-sys.path.extend([RCMDP_path])
+
 from RCMDP.Choose_Method import choose_method
-from agent.RCPG_Agent import RCPG_Agent
-from agent.random_agent import RandomAgent
+from RCMDP.agent.RCPG_Agent import RCPG_Agent
+from RCMDP.agent.random_agent import RandomAgent
 from RCMDP.UncertaintySet import *
 
 def set_agent(args,env):

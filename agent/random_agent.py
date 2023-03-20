@@ -1,10 +1,6 @@
 import numpy as np
 from collections import namedtuple
-import os
-import sys, os
-RCMDP_path=os.environ["PROJECT_DIR"]+'/RCMDP/'
-sys.path.extend([RCMDP_path])
-from Utils import check_folder
+from RCMDP.Utils import check_folder
 
 Transition = namedtuple('Transition', ['state', 'action', 'a_log_prob', 'reward', 'next_state'])
 

@@ -7,6 +7,21 @@ class BaseCMDP(object):
         self.actions = actions
         self.gamma = gamma
         self.d = d
+    def episode(self,s, pi,test):
+        R = 0
+        C = 0
+        trajectory = []
+        for t in range(self.T):
+            if s in self.terminals:
+                break
+            (s, a, r, c, s_next, grad,probs,grad_adv,probs_adv) = self.step(s,pi,test)
+            trajectory.append((s, a, r, c, s_next, grad, probs,grad_adv,probs_adv))
+            s = s_next
+            R += r
+            C += c
+        self.logfile.write("%.4f \t %.4f \n"%(R,C))
+        self.logfile.flush()
+        return trajectory
 
 class CMDP(BaseCMDP):
     def __init__(self,p_0,r,c,P,states,actions,next_states,gamma,T,d,terminals,logfile):
@@ -21,6 +36,10 @@ class CMDP(BaseCMDP):
         self.logfile.write("R \t C \n")
         self.next_states=next_states # used to initalise uncertainty set's outcomes
 
+    def episode(self,pi,test):
+        s = self.p_0.generate()
+        self.episode(s, pi,test)
+
     def step(self,s,pi,test):
         a_index, grad,probs = pi.select_action(s,deterministic=test)
         a = self.actions[a_index]
@@ -29,23 +48,6 @@ class CMDP(BaseCMDP):
         r = self.r(s_next)
         # print("s_next ",s_next)
         return (s, a, r, c, s_next,grad,probs,None,None)
-
-    def episode(self,pi,test):
-        R = 0
-        C = 0
-        s = self.p_0.generate()
-        trajectory = []
-        for t in range(self.T):
-            if s in self.terminals or t > 200:
-                break
-            (s, a, r, c, s_next, grad,probs,grad_adv,probs_adv) = self.step(s,pi,test)
-            trajectory.append((s, a, r, c, s_next, grad, probs,grad_adv,probs_adv))
-            s = s_next
-            R += r
-            C += c
-        self.logfile.write("%.4f \t %.4f \n"%(R,C))
-        self.logfile.flush()
-        return trajectory
 
 class RobustCMDP(CMDP):
     def __init__(self,p_0,r,c,P,states,actions,next_states,gamma,T,d,terminals,logfile,uncertainty_set):

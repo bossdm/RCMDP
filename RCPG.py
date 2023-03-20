@@ -3,8 +3,8 @@
 
  """
 
-from UncertaintySet import *
-from CMDP import *
+from RCMDP.UncertaintySet import *
+from RCMDP.CMDP import *
 import pickle
 
 PRINTING=False

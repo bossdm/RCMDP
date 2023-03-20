@@ -1,11 +1,11 @@
 
 import numpy as np
-from Policy import StochasticPol
-from Critic import Critic
+from RCMDP.Policy import StochasticPol
+from RCMDP.Critic import Critic
 import tensorflow as tf
 import keras.backend as K
 import pickle
-from Utils import check_folder
+from RCMDP.Utils import check_folder
 from collections import OrderedDict
 PRINTING=False
 

@@ -1,7 +1,7 @@
 
 from keras.optimizers import SGD
-from RCPG import *
-from LR_Schedule import *
+from RCMDP.RCPG import *
+from RCMDP.LR_Schedule import *
 
 
 def choose_method(method_name,alpha1,alpha2,folder,D_S,D_A,D_C,pi, real_cmdp, sim_iterations, real_iterations,
