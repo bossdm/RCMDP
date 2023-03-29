@@ -12,8 +12,6 @@ def agent_env_loop(env,agent,args,folder,episodeCount,episodeLimit,using_nextsta
     while not solved and episodeCount <= episodeLimit:
         s = env.reset()  # Reset robot and get starting observation
         print("start episode at state ",s)
-        env.episodeScore = 0
-        env.episodeConstraint = 0
         actionProbsList = []  # This list holds the probability of each chosen action
         # Inner loop is the episode loop
         for step in range(env.stepsPerEpisode):
@@ -28,7 +26,7 @@ def agent_env_loop(env,agent,args,folder,episodeCount,episodeLimit,using_nextsta
             # note that RCPG does not technically use s_next in update of networks but it does in add_visits to update the uncertainty set;
             # but in general useful to store for other learners (e.g. experience replay)
             agent.storeTransition(trans)
-
+            actionProbsList.append(actionProbs)
             env.episodeScore += r  # Accumulate episode reward
             env.episodeConstraint += c  # Accumulate episode constraint
             if done:
@@ -72,7 +70,6 @@ def agent_env_loop(env,agent,args,folder,episodeCount,episodeLimit,using_nextsta
     agent.save(folder,episodeCount)
 
     s = env.reset()
-    env.episodeScore = 0
     while True:
         a, grad, actionProbs = agent.work(s, test=True)
         s_next, r, c, grad_adv, probs_adv, done, info = env.step([a])
@@ -81,5 +78,4 @@ def agent_env_loop(env,agent,args,folder,episodeCount,episodeLimit,using_nextsta
         s = s_next
         if done:
             print("Reward accumulated =", env.episodeScore)
-            env.episodeScore = 0
             s = env.reset()
