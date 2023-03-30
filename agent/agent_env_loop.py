@@ -1,6 +1,45 @@
 
 import numpy as np
 
+def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,folder):
+    if env.stage == "data":
+        # update the agent uncertainty set
+        agent.uncertainty_set.add_visits(agent.buffer)
+        agent.uncertainty_set.set_params()
+        env.uncertainty_set = agent.uncertainty_set
+    elif env.stage == "train":
+        maxActionProb = np.max(actionProbsList)
+        # averageEpisodeActionProbs.append(avgActionProb)
+        print("Max action prob:", maxActionProb)
+        agent.trainStep(batchSize=step + 1)  # train the agent
+        if (episodeCount % saving_frequency) == 0:
+            print("saving at episode count " + str(episodeCount))
+            agent.save(folder, episodeCount)
+        solved = env.solved()  # Check whether the task is solved
+    elif env.stage == "test":  # "test"
+        # nothing to update
+        print("continue testing ")
+    else:
+        raise Exception("environment stage should be either data, train, or test. Got " + env.stage + "instead")
+    env.episodeScoreList.append(env.episodeScore)
+    env.episodeConstraintList.append(env.episodeConstraint)
+def after_loop(env,agent,folder,episodeCount,solved):
+    if env.stage == "training": # this was a training session
+        agent.save(folder,episodeCount)
+        if not solved:
+            print("Reached episode limit and task was not solved, deploying agent for testing...")
+        else:
+            print("Task is solved, deploying agent for testing...")
+
+    writefile = open(folder+"performance_"+env.stage+".txt","w")
+    for i in range(len(env.episodeScoreList)):
+        writefile.write("%.4f "%(env.episodeScoreList[i],))
+        for j in range(len(env.d)):
+            writefile.write("\t %.4f" % (env.episodeConstraintList[j],))
+        writefile.write("\n")
+    print("avg score ", np.mean(env.episodeScoreList))
+    print("avg constraint ", np.mean(env.episodeConstraintList))
+
 def agent_env_loop(env,agent,args,folder,episodeCount,episodeLimit,using_nextstate=False):
 
     env.uncertainty_set = agent.uncertainty_set
@@ -40,42 +79,7 @@ def agent_env_loop(env,agent,args,folder,episodeCount,episodeLimit,using_nextsta
         # The average action probability tells us how confident the agent was of its actions.
         # By looking at this we can check whether the agent is converging to a certain policy.
 
-        if env.stage == "data":
-            # update the agent uncertainty set
-            agent.uncertainty_set.add_visits(agent.buffer)
-            agent.uncertainty_set.set_params()
-            env.uncertainty_set = agent.uncertainty_set
-        elif env.stage == "train":
-            maxActionProb = np.max(actionProbsList)
-            #averageEpisodeActionProbs.append(avgActionProb)
-            print("Max action prob:", maxActionProb)
-            agent.trainStep(batchSize=step + 1)  # train the agent
-            if (episodeCount % saving_frequency) == 0:
-                print("saving at episode count " + str(episodeCount))
-                agent.save(folder, episodeCount)
-            solved = env.solved()  # Check whether the task is solved
-        elif env.stage == "test": # "test"
-            # nothing to update
-            print("continue testing ")
-        else:
-            raise Exception("environment stage should be either data, train, or test. Got "+ env.stage + "instead")
-        env.episodeScoreList.append(env.episodeScore)
-        env.episodeConstraintList.append(env.episodeConstraint)
-
+        after_episode(env, agent, step, actionProbsList, saving_frequency, episodeCount, folder)
         episodeCount += 1  # Increment episode counter
 
-    if env.stage == "training": # this was a training session
-        agent.save(folder,episodeCount)
-        if not solved:
-            print("Reached episode limit and task was not solved, deploying agent for testing...")
-        else:
-            print("Task is solved, deploying agent for testing...")
-
-    writefile = open(folder+"performance_"+env.stage+".txt","w")
-    for i in range(len(env.episodeScoreList)):
-        writefile.write("%.4f "%(env.episodeScoreList[i],))
-        for j in range(len(env.d)):
-            writefile.write("\t %.4f" % (env.episodeConstraintList[j],))
-        writefile.write("\n")
-    print("avg score ", np.mean(env.episodeScoreList))
-    print("avg constraint ", np.mean(env.episodeConstraintList))
+    after_loop(env,agent,folder,episodeCount,solved)
