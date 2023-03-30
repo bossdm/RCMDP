@@ -70,3 +70,12 @@ def agent_env_loop(env,agent,args,folder,episodeCount,episodeLimit,using_nextsta
             print("Reached episode limit and task was not solved, deploying agent for testing...")
         else:
             print("Task is solved, deploying agent for testing...")
+
+    writefile = open(folder+"performance_"+env.stage+".txt","w")
+    for i in range(len(env.episodeScoreList)):
+        writefile.write("%.4f "%(env.episodeScoreList[i],))
+        for j in range(len(env.d)):
+            writefile.write("\t %.4f" % (env.episodeConstraintList[j],))
+        writefile.write("\n")
+    print("avg score ", np.mean(env.episodeScoreList))
+    print("avg constraint ", np.mean(env.episodeConstraintList))
