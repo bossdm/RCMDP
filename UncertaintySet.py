@@ -129,9 +129,9 @@ class HoeffdingSet(BaseUncertaintySet):
             else:
                 s_index = self.states.index(s)      # note: this uncertainty set always assumes the same state space for s and s_next
             if self.centroids:
-                s_next_index = self.get_closest(s)
+                s_next_index = self.get_closest(s_next)
             else:
-                s_next_index = self.next_states.index(s)
+                s_next_index = self.next_states.index(s_next)
             self.data[s_index,a_index,s_next_index] += 1   # add trajectory to the data counts
     def set_params(self):
         """

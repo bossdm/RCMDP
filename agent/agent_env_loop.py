@@ -4,10 +4,11 @@ import numpy as np
 def agent_env_loop(env,agent,args,folder,episodeCount,episodeLimit,using_nextstate=False):
 
     env.uncertainty_set = agent.uncertainty_set
-    env.uncertainty_set.centroids = env.states
+    #env.uncertainty_set.centroids = env.states
     saving_frequency=args.saving_freq
     solved = False  # Whether the solved requirement is met
-
+    env.episodeScoreList = []
+    env.episodeConstraintList = []
     # Run outer loop until the episodes limit is reached or the task is solved
     while not solved and episodeCount <= episodeLimit:
         s = env.reset()  # Reset robot and get starting observation
@@ -38,44 +39,34 @@ def agent_env_loop(env,agent,args,folder,episodeCount,episodeLimit,using_nextsta
         print("Episode #", episodeCount, "constraint:", env.episodeConstraint)
         # The average action probability tells us how confident the agent was of its actions.
         # By looking at this we can check whether the agent is converging to a certain policy.
-        maxActionProb = np.max(actionProbsList)
-        #averageEpisodeActionProbs.append(avgActionProb)
-        print("Max action prob:", maxActionProb)
 
-        # update the agent
-        agent.uncertainty_set.add_visits(agent.buffer)
-        agent.uncertainty_set.set_params()
-        env.uncertainty_set = agent.uncertainty_set
+        if env.stage == "data":
+            # update the agent uncertainty set
+            agent.uncertainty_set.add_visits(agent.buffer)
+            agent.uncertainty_set.set_params()
+            env.uncertainty_set = agent.uncertainty_set
+        elif env.stage == "train":
+            maxActionProb = np.max(actionProbsList)
+            #averageEpisodeActionProbs.append(avgActionProb)
+            print("Max action prob:", maxActionProb)
+            agent.trainStep(batchSize=step + 1)  # train the agent
+            if (episodeCount % saving_frequency) == 0:
+                print("saving at episode count " + str(episodeCount))
+                agent.save(folder, episodeCount)
+            solved = env.solved()  # Check whether the task is solved
+        elif env.stage == "test": # "test"
+            # nothing to update
+            print("continue testing ")
+        else:
+            raise Exception("environment stage should be either data, train, or test. Got "+ env.stage + "instead")
         env.episodeScoreList.append(env.episodeScore)
         env.episodeConstraintList.append(env.episodeConstraint)
-        agent.trainStep(batchSize=step + 1)
-        if (episodeCount % saving_frequency) == 0:
-            print("saving at episode count " + str(episodeCount))
-            agent.save(folder, episodeCount)
-        solved = env.solved()  # Check whether the task is solved
+
         episodeCount += 1  # Increment episode counter
 
-    # np.convolve is used as a moving average, see https://stackoverflow.com/a/22621523
-    #movingAvgN = 10
-    #plotData(convolve(env.episodeScoreList, ones((movingAvgN,))/movingAvgN, mode='valid'),
-    #         "episode", "episode score", "Episode scores over episodes")
-    #plotData(convolve(averageEpisodeActionProbs, ones((movingAvgN,))/movingAvgN, mode='valid'),
-    #        "episode", "average episode action probability", "Average episode action probability over episodes")
-
-    if not solved:
-        print("Reached episode limit and task was not solved, deploying agent for testing...")
-    else:
-        print("Task is solved, deploying agent for testing...")
-
-    agent.save(folder,episodeCount)
-
-    s = env.reset()
-    while True:
-        a, grad, actionProbs = agent.work(s, test=True)
-        s_next, r, c, grad_adv, probs_adv, done, info = env.step([a])
-        env.episodeScore += r  # Accumulate episode reward
-        env.episodeConstraint += c  # Accumulate episode constraint
-        s = s_next
-        if done:
-            print("Reward accumulated =", env.episodeScore)
-            s = env.reset()
+    if env.stage == "training": # this was a training session
+        agent.save(folder,episodeCount)
+        if not solved:
+            print("Reached episode limit and task was not solved, deploying agent for testing...")
+        else:
+            print("Task is solved, deploying agent for testing...")
