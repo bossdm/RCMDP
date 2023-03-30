@@ -1,5 +1,3 @@
-
-import sys, os
 from RCMDP.RCPG import *
 
 class RCPG_Agent(RCPG):

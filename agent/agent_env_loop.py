@@ -1,6 +1,6 @@
 
 import numpy as np
-
+from RCMDP.Utils import check_folder
 def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,folder):
     if env.stage == "data":
         # update the agent uncertainty set
@@ -30,12 +30,12 @@ def after_loop(env,agent,folder,episodeCount,solved):
             print("Reached episode limit and task was not solved, deploying agent for testing...")
         else:
             print("Task is solved, deploying agent for testing...")
-
-    writefile = open(folder+"performance_"+env.stage+".txt","w")
+    check_folder(folder+"performance/")
+    writefile = open(folder+"performance/"+env.stage+".txt","w")
     for i in range(len(env.episodeScoreList)):
         writefile.write("%.4f "%(env.episodeScoreList[i],))
         for j in range(len(env.d)):
-            writefile.write("\t %.4f" % (env.episodeConstraintList[j],))
+            writefile.write("\t %.4f" % (env.episodeConstraintList[i][j],))
         writefile.write("\n")
     print("avg score ", np.mean(env.episodeScoreList))
     print("avg constraint ", np.mean(env.episodeConstraintList))
