@@ -14,7 +14,7 @@ def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,f
         agent.trainStep(batchSize=step + 1)  # train the agent
         if (episodeCount % saving_frequency) == 0:
             print("saving at episode count " + str(episodeCount))
-            agent.save(folder, episodeCount)
+            agent.save(folder+"/models_and_plots/", episodeCount)
         solved = env.solved()  # Check whether the task is solved
     elif env.stage == "test":  # "test"
         # nothing to update
@@ -25,13 +25,13 @@ def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,f
     env.episodeConstraintList.append(env.episodeConstraint)
 def after_loop(env,agent,folder,episodeCount,solved):
     if env.stage == "training": # this was a training session
-        agent.save(folder,episodeCount)
+        agent.save(folder+"/models_and_plots/",episodeCount)
         if not solved:
             print("Reached episode limit and task was not solved, deploying agent for testing...")
         else:
             print("Task is solved, deploying agent for testing...")
-    check_folder(folder+"performance/")
-    writefile = open(folder+"performance/"+env.stage+".txt","w")
+    check_folder(folder+"/performance/")
+    writefile = open(folder+"/performance/"+env.stage+".txt","w")
     for i in range(len(env.episodeScoreList)):
         writefile.write("%.4f "%(env.episodeScoreList[i],))
         for j in range(len(env.d)):
@@ -40,7 +40,7 @@ def after_loop(env,agent,folder,episodeCount,solved):
     print("avg score ", np.mean(env.episodeScoreList))
     print("avg constraint ", np.mean(env.episodeConstraintList))
 
-def agent_env_loop(env,agent,args,folder,episodeCount,episodeLimit,using_nextstate=False):
+def agent_env_loop(env,agent,args,episodeCount,episodeLimit,using_nextstate=False):
 
     env.uncertainty_set = agent.uncertainty_set
     #env.uncertainty_set.centroids = env.states
@@ -79,7 +79,7 @@ def agent_env_loop(env,agent,args,folder,episodeCount,episodeLimit,using_nextsta
         # The average action probability tells us how confident the agent was of its actions.
         # By looking at this we can check whether the agent is converging to a certain policy.
 
-        after_episode(env, agent, step, actionProbsList, saving_frequency, episodeCount, folder)
+        after_episode(env, agent, step, actionProbsList, saving_frequency, episodeCount, args.folder)
         episodeCount += 1  # Increment episode counter
 
-    after_loop(env,agent,folder,episodeCount,solved)
+    after_loop(env,agent,args.folder,episodeCount,solved)
