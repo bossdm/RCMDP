@@ -16,6 +16,7 @@ class RandomAgent:
         self.outputs=numberOfActorOutputs
         self.uncertainty_set=uncertainty_set
         self.buffer=[]
+        self.trajectories=[]
 
     def work(self, agentInput, test=False):
         """
@@ -54,6 +55,12 @@ class RandomAgent:
         :type batchSize: int, optional
         """
         del self.buffer[:]
+
+    def testStep(self):
+        """
+        """
+        self.trajectories.append(self.buffer)
+        self.buffer=[]
 
     def random_state(self,s_index,a):
         return None, None, None

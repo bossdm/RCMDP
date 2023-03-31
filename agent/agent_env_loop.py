@@ -17,7 +17,7 @@ def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,f
             agent.save(folder+"/models_and_plots/", episodeCount)
         solved = env.solved()  # Check whether the task is solved
     elif env.stage == "test":  # "test"
-        # nothing to update
+        agent.testStep()
         print("continue testing ")
     else:
         raise Exception("environment stage should be either data, train, or test. Got " + env.stage + "instead")

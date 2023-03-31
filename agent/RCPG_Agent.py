@@ -13,6 +13,7 @@ class RCPG_Agent(RCPG):
                  sim_iterations, real_iterations, train_iterations, lr1, lr2, logfile, simlogfile)
         self.buffer = []
         self.no_noise = no_noise
+        self.trajectories=[]
 
     @classmethod
     def from_RCPG(cls,rcpg,no_noise):
@@ -73,6 +74,12 @@ class RCPG_Agent(RCPG):
         # Default behaviour waits for buffer to collect at least one batch_size of transitions
         self.update(self.buffer, self.gamma, self.d)
         del self.buffer[:]
+
+    def testStep(self):
+        """
+        """
+        self.trajectories.append(self.buffer)
+        self.buffer=[]
 
     def random_state(self,s_index,a):
         """
