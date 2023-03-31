@@ -32,5 +32,12 @@ def set_agent(args,env):
                                sim_iterations=None, real_iterations=None,
                                train_iterations=None)
         return RandomAgent(D_A,uncertainty_set)
+    elif args.method_name=="PG":
+        pi = StochasticPol(D_S=D_S, D_A=D_A)
+        method = choose_method("PG", args.learning_rate, args.learning_rate2, args.folder, D_S=D_S, D_A=D_A,D_C=D_C,
+                               pi=pi, real_cmdp=env,
+                               sim_iterations=None, real_iterations=None,
+                               train_iterations=None)
+        return RCPG_Agent.from_RCPG(method, no_noise=False)
     else:
         raise Exception("method ", args.method_name, " not yet supported")
