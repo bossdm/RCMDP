@@ -1,6 +1,7 @@
 
 import numpy as np
 from RCMDP.Utils import check_folder
+PRINTING=False
 def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,folder):
     if env.stage == "data":
         # update the agent uncertainty set
@@ -10,15 +11,18 @@ def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,f
     elif env.stage == "train":
         maxActionProb = np.max(actionProbsList)
         # averageEpisodeActionProbs.append(avgActionProb)
-        print("Max action prob:", maxActionProb)
+        if PRINTING:
+            print("Max action prob:", maxActionProb)
         agent.trainStep(batchSize=step + 1)  # train the agent
         if (episodeCount % saving_frequency) == 0:
-            print("saving at episode count " + str(episodeCount))
+            if PRINTING:
+                print("saving at episode count " + str(episodeCount))
             agent.save(folder+"/models_and_plots/", episodeCount)
         solved = env.solved()  # Check whether the task is solved
     elif env.stage == "test":  # "test"
         agent.testStep()
-        print("continue testing ")
+        if PRINTING:
+            print("continue testing ")
     else:
         raise Exception("environment stage should be either data, train, or test. Got " + env.stage + "instead")
     env.episodeScoreList.append(env.episodeScore)
@@ -51,7 +55,8 @@ def agent_env_loop(env,agent,args,episodeCount,episodeLimit,using_nextstate=Fals
     # Run outer loop until the episodes limit is reached or the task is solved
     while not solved and episodeCount <= episodeLimit:
         s = env.reset()  # Reset robot and get starting observation
-        print("start episode at state ",s)
+        if PRINTING:
+            print("start episode at state ",s)
         actionProbsList = []  # This list holds the probability of each chosen action
         # Inner loop is the episode loop
         for step in range(env.stepsPerEpisode):
@@ -73,9 +78,9 @@ def agent_env_loop(env,agent,args,episodeCount,episodeLimit,using_nextstate=Fals
                 break
 
             s = s_next  # state for next step is current step's newState
-
-        print("Episode #", episodeCount, "score:", env.episodeScore)
-        print("Episode #", episodeCount, "constraint:", env.episodeConstraint)
+        if PRINTING:
+            print("Episode #", episodeCount, "score:", env.episodeScore)
+            print("Episode #", episodeCount, "constraint:", env.episodeConstraint)
         # The average action probability tells us how confident the agent was of its actions.
         # By looking at this we can check whether the agent is converging to a certain policy.
 

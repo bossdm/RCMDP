@@ -53,6 +53,15 @@ class RCPG_Agent(RCPG):
         """
         RCPG.load(self,path+"/episode"+str(episode)+"/stored")
 
+    def load_from_path(self, path):
+        """
+        Load models from the path provided.
+
+        :param path: path where the models are saved
+        :type path: str
+        """
+        RCPG.load(self,path)
+
     def storeTransition(self, transition):
         """
         Stores a transition in the buffer to be used later.
