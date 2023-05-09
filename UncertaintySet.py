@@ -282,7 +282,6 @@ class AdversarialHoeffdingSet(BaseUncertaintySet):
             else:
                 s_next_index = self.next_states.index(s_next)
             self.data[s_index,a_index,s_next_index] += 1   # add trajectory to the data counts
-        self.set_cumulative_grads()
     def set_params(self):
         """
 
