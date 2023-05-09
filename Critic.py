@@ -6,14 +6,15 @@ from keras.layers import Dense
 import keras.backend as K
 from keras.models import load_model
 import numpy as np
+from keras.optimizers import Adam
 
 class Critic(object):
 
     def __init__(self,D_S,D_C):
         self.C = Sequential()
-        self.C.add(Dense(20, name="hidden1",activation="relu",kernel_initializer='uniform', input_shape=(D_S,)))
+        self.C.add(Dense(100, name="hidden1",activation="relu",kernel_initializer='uniform', input_shape=(D_S,)))
         self.C.add(Dense(D_C, name="output",activation="linear"))
-        self.C.compile(optimizer="rmsprop",loss="MSE")
+        self.C.compile(optimizer=Adam(learning_rate=0.001),loss="MSE")
         self.batch_x = []
         self.batch_y = []
 
