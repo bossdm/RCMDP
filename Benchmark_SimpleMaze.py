@@ -10,12 +10,12 @@ import csv
 parser = argparse.ArgumentParser(
                     prog = 'Simple maze',
                     description = 'run RL on a simple maze problem')
-parser.add_argument('--m', dest='method_name',type=str,default="AdversarialRCPG_Hoeffding_cumulative")
+parser.add_argument('--m', dest='method_name',type=str,default="AdversarialRCPG_Hoeffding")
 parser.add_argument('--lr',dest="learning_rate",type=float,default=0.001)
 parser.add_argument('--lr2',dest="learning_rate2",type=float,default=0.01)
 parser.add_argument('--lr3',dest="learning_rate3",type=float,default=0.001)
 parser.add_argument('--lr4',dest="learning_rate4",type=float,default=1.0)
-parser.add_argument('--folder',dest="folder",type=str,default="LogsAdversarialRCPG_debug/")
+parser.add_argument('--folder',dest="folder",type=str,default="LogsAdversarialRCPG/")
 args = parser.parse_args()
 
 if __name__ == "__main__":
