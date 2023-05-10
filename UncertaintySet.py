@@ -22,7 +22,7 @@ class BaseUncertaintySet(object):
         self.states=states
         self.actions=actions
         self.next_states = next_states
-        self.nominal=np.zeros((self.S,self.A,self.NS)) # uniform at the start
+        self.nominal=np.zeros((self.S,self.A,self.NS)) + 1./self.NS # uniform at the start
         self.centroids=centroids
         self.use_offset=use_offset
         state_matrix = np.array(states)
@@ -315,7 +315,8 @@ class AdversarialHoeffdingSet(BaseUncertaintySet):
         """
         adversary_state = self.get_adversary_state(s,a)
         if self.count < self.min_count - 1:
-            return np.random.choice(self.NS,p=self.nominal[s,a]), (None,None,None,None), None
+            probs = np.random.choice(self.NS,p=self.nominal[s,a])
+            return probs, (None,None,None,None), None
         s_next_index, grad, probs = self.pi.select_action(adversary_state,deterministic=False,nominal=self.nominal[s,a])
         return s_next_index,grad,probs
 
