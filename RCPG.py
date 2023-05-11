@@ -75,11 +75,11 @@ class RCPG(object):
     def update_policy(self,V, C, d, probs, grad, eta1,eta2):
         grad_p,grad_H = grad
         if self.optimiser_lbda is not None:
-            actual_lbda = tf.clip_by_value(tf.exp(self.lbda), clip_value_min=0, clip_value_max=100)
-            L = -(V - K.sum(actual_lbda * C))
+            actual_lbda = tf.clip_by_value(tf.exp(self.lbda), clip_value_min=0, clip_value_max=10000)
+            L = -(V - K.sum(actual_lbda * C)) # dL/dtheta (min_theta L)
             update = [eta1 * ((L * g) - self.entropy_reg_constant*g_H) for (g,g_H) in zip(grad_p,grad_H)]
             self.update_theta(update)
-            update_l = eta2 * (C - d)  # dL/d\lambda
+            update_l = -eta2 * (C - d)  # dL/d\lambda  (max_lambda L)
             self.update_lbda(update_l)
         else:
             L = -V
@@ -91,22 +91,26 @@ class RCPG(object):
     def update(self,trajectory,gamma,d):
         V = 0
         C = 0
+        next_L = 0
         self.n += 1  # count
         eta1 = self.lr1(self.n)
         eta2 = self.lr2(self.n)
         self.uncertainty_set.count = self.n
-        for step in trajectory[::-1]:
+        for i, step in enumerate(trajectory[::-1]):
             s, a, r, c, s_next, grad, probs, grad_adv, probs_adv = step
             V = r + gamma * V
             C = c + gamma * C
             L,actual_lbda = self.update_policy(V,C,d,probs,grad,eta1,eta2)
             if self.uncertainty_set.adversarial:  # min L s.t. ||P-\hat{P}|| <= alpha
                 # try to make the agent fail the objective
-                L_adv, lbda_adv, delta_P, alpha = self.uncertainty_set.update_adversary(eta1, eta2, s, a, L, grad_adv, probs_adv)
+                L_adv, lbda_adv, delta_P, alpha = self.uncertainty_set.update_adversary(eta1, eta2, s, a, next_L, grad_adv, probs_adv)
                 self.logfile.write(
-                    '%s \t %s \t %s \t %s \t %s \t %s \n' % (str(K.eval(L)), str(K.eval(actual_lbda)),
-                                                                 str(L_adv), str(lbda_adv), str(delta_P), str(alpha)))
+                        '%s \t %s \t %s \t %s \t %s \t %s \n' % (str(K.eval(next_L)), str(K.eval(actual_lbda)),
+                                                                     str(L_adv), str(lbda_adv), str(delta_P), str(alpha)))
                 self.logfile.flush()
+                next_L = L
+                #actual lbda lags one step but converges anyway
+                # else: nothing to update for the last step
             elif self.uncertainty_set.critic:
                 # add info to the critic
                 self.uncertainty_set.update_critic(s, C)

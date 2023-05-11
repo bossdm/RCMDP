@@ -393,12 +393,13 @@ class AdversarialHoeffdingSet(BaseUncertaintySet):
 
         grad_theta, grad_H,delta_P = grad_adv # grad_P,
         grad_P = self.compute_nominal_deviation_grad()
-        update = [eta1*(L*grad + self.lbda *grad_P[g]) for g,grad in enumerate(grad_theta)]  #miniming L and norm
+        actual_lbda = tf.clip_by_value(tf.exp(self.lbda), clip_value_min=0, clip_value_max=10000)
+        update = [eta1*(L*grad + actual_lbda *grad_P[g]) for g,grad in enumerate(grad_theta)]  #dL/dtheta_adv : min_thetaadv L_adv
         self.optimiser_theta.apply_gradients(zip(update, self.pi.params()))  # increase iteration by one
-        update_l = (eta2 * (delta_P - self.alpha[s_index,a]))  # dL/d\lambda
+        update_l = -(eta2 * (delta_P - self.alpha[s_index,a]))  # dL/d\lambda  (max_lambda  L_adv)
         self.optimiser_lbda.apply_gradients([(update_l, self.lbda)])  # increase iteration by one
-        L_adv = L + self.lbda * (delta_P - self.alpha[s_index,a]) # keep track of L_adv
-        return K.eval(L_adv), K.eval(self.lbda), K.eval(delta_P), self.alpha[s_index,a]
+        L_adv = L + actual_lbda * (delta_P - self.alpha[s_index,a]) # keep track of L_adv
+        return K.eval(L_adv), K.eval(actual_lbda), K.eval(delta_P), self.alpha[s_index,a]
         #print("L_adv ", L_adv)
         #print("lbda_adv", self.lbda)
 
