@@ -6,6 +6,7 @@ from RCMDP.Choose_Method import *
 import os
 import argparse
 import csv
+import numpy as np
 
 parser = argparse.ArgumentParser(
                     prog = 'Simple maze',
@@ -16,9 +17,12 @@ parser.add_argument('--lr2',dest="learning_rate2",type=float,default=0.0001)
 parser.add_argument('--lr3',dest="learning_rate3",type=float,default=0.001)
 parser.add_argument('--lr4',dest="learning_rate4",type=float,default=0.0001)
 parser.add_argument('--folder',dest="folder",type=str,default="LogsAdversarialRCPG")
+parser.add_argument('--run',dest="run",type=int,default=0)
 args = parser.parse_args()
 
 if __name__ == "__main__":
+    np.random.seed(args.run)
+    args.folder+="/run"+str(args.run)
     #d=200   --> budget way too big so solution has C(theta) - d < 0 (inactive constraint) --> see that lbda converges to 0
     d=[4]
     T=200
@@ -28,15 +32,13 @@ if __name__ == "__main__":
     #S=25 # 5 by 5 grid
     #A=4  # up,down,right, or left
     actions=[[-1,0],[1,0],[0,1],[0,-1]]
-    # triangle_states=[(x,y) for y in range(4) for x in range(4) if x <= y]
-    # l=len(triangle_states)
     initial_states=[[0,0]]
     p_0 = InitialDiscreteState(initial_states,probs=[1.])
     terminals=[[4,4]]
     def r_real(s_next):    # try to reach the
         x,y = s_next
         s_next = [np.clip(x,0,4),np.clip(y,0,4)]
-        return 1.0 if s_next == [4,4] else -1.0  # go to the goal location
+        return -1.0  # go to the goal location as quickly as possible (-8 is optimal)
 
     def c_real(s_next):  # try to reach the
         x, y = s_next
@@ -62,26 +64,28 @@ if __name__ == "__main__":
     states=[[i,j] for i in range(5) for j in range(5)]
     next_states=[[0,0]] + actions    # relative state encoding
     realcmdp_logfile = open(args.folder + "/real_cmdp_log.txt", "w")
-    real_cmdp = CMDP(p_0,r_real,c_real,P_real(0.90),states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile)
+    real_cmdp = CMDP(p_0,r_real,c_real,P_real(0.80),states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile)
     tests=[]
-    for prob in [0.5,0.6,0.7,0.8,1.0]:
+    for prob in [0.6,0.7,0.8,0.9,1.0]:
         tests.append(CMDP(p_0,r_real,c_real,P_real(prob),states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile))
 
     pi = StochasticPol(D_S,D_A)
-    sim_iterations = 500
+    sim_iterations = 1000
     real_iterations = 10
     train_iterations = 1
-    test_its = 10
+    test_its = 50
     gamma = 0.99
 
     method = choose_method(args.method_name,args.learning_rate,args.learning_rate2,args.learning_rate3, args.learning_rate4,
                            args.folder,D_S,D_A,D_C,pi, real_cmdp, sim_iterations, real_iterations,
                     train_iterations,use_offset=True)
     method.train()
+
+    # test stochastic
     for t in tests:
         method.real_CMDP = t
         for i in range(test_its):
-            method.test()
+            method.test(False)
     test_values=[]
     test_constraints=[]
     lines = list(csv.reader(open(args.folder + "/real_cmdp_log.txt", 'r'), delimiter='\t'))
@@ -89,5 +93,20 @@ if __name__ == "__main__":
         x,y=line
         test_values.append(float(x))
         test_constraints.append(float(y))
-    testperformancefile = open(args.folder + "/test_performance.txt", "w")
+    testperformancefile = open(args.folder + "/test_performance_stochastic.txt", "w")
+    testperformancefile.write("%.4f \t %.4f \t %.4f \t %.4f \n"%(np.mean(test_values),np.std(test_values),np.mean(test_constraints),np.std(test_constraints)))
+
+    # test deterministic
+    for t in tests:
+        method.real_CMDP = t
+        for i in range(test_its):
+            method.test(True)
+    test_values=[]
+    test_constraints=[]
+    lines = list(csv.reader(open(args.folder + "/real_cmdp_log.txt", 'r'), delimiter='\t'))
+    for line in lines[-len(tests)*test_its:]:
+        x,y=line
+        test_values.append(float(x))
+        test_constraints.append(float(y))
+    testperformancefile = open(args.folder + "/test_performance_deterministic.txt", "w")
     testperformancefile.write("%.4f \t %.4f \t %.4f \t %.4f \n"%(np.mean(test_values),np.std(test_values),np.mean(test_constraints),np.std(test_constraints)))

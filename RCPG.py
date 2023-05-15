@@ -63,8 +63,8 @@ class RCPG(object):
             time.sleep(2)
             self.offline_optimisation()
 
-    def test(self):
-       self.real_CMDP.episode(self.pi,test=False)
+    def test(self,deterministic):
+       self.real_CMDP.episode(self.pi,test=deterministic)
 
     def real_samples(self):
         for it in range(self.real_iterations):

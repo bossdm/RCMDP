@@ -33,7 +33,7 @@ class StochasticPol(object):
                     a = tf.random.categorical(log_probs, 1)[0,0]
                     logprob = log_probs[0,a]
                     entropy = -tf.reduce_sum(probs[0]*log_probs[0])  # just to make sure it scales well use lambda here as well
-                    print("entropy ", K.eval(entropy))
+                    #print("entropy ", K.eval(entropy))
                     #print(probs,a)
                     if nominal is not None:
                         delta_P = tf.norm(probs[0] - nominal, ord=1)  # L1 norm
