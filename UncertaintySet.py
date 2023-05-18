@@ -9,7 +9,7 @@ from RCMDP.Utils import check_folder
 from collections import OrderedDict
 import time
 PRINTING=False
-N_NORM_SAMPLES=25
+N_NORM_SAMPLES=100
 
 class BaseUncertaintySet(object):
     adversarial = False
@@ -261,7 +261,7 @@ class AdversarialHoeffdingSet(BaseUncertaintySet):
         self.pi = StochasticPol(self.D_S+1,self.NS) # +1 is for actions; S is output as we want output probs for each state
         self.optimiser_theta = optimiser_theta
         self.optimiser_lbda  = optimiser_lbda
-        self.lbda = tf.Variable(0.10,dtype=np.float64)  # norm constraint is always active
+        self.lbda = tf.Variable(np.log(50.0),dtype=np.float64)  # norm constraint is always active
         self.writefile=writefile
         self.U_updates=0
         self.adversarial = True
@@ -393,7 +393,7 @@ class AdversarialHoeffdingSet(BaseUncertaintySet):
 
         grad_theta, grad_H,delta_P = grad_adv # grad_P,
         grad_P = self.compute_nominal_deviation_grad()
-        actual_lbda = tf.clip_by_value(tf.exp(self.lbda), clip_value_min=0, clip_value_max=10000)
+        actual_lbda = tf.clip_by_value(tf.exp(self.lbda), clip_value_min=0, clip_value_max=500)
         update = [eta1*(L*grad + actual_lbda *grad_P[g]) for g,grad in enumerate(grad_theta)]  #dL/dtheta_adv : min_thetaadv L_adv
         self.optimiser_theta.apply_gradients(zip(update, self.pi.params()))  # increase iteration by one
         update_l = -(eta2 * (delta_P - self.alpha[s_index,a]))  # dL/d\lambda  (max_lambda  L_adv)

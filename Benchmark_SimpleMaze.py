@@ -70,8 +70,8 @@ if __name__ == "__main__":
         tests.append(CMDP(p_0,r_real,c_real,P_real(prob),states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile))
 
     pi = StochasticPol(D_S,D_A)
-    sim_iterations = 1000
-    real_iterations = 10
+    sim_iterations = 5000
+    real_iterations = 100
     train_iterations = 1
     test_its = 50
     gamma = 0.99

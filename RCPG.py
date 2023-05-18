@@ -49,7 +49,7 @@ class RCPG(object):
         self.simlogfile=simlogfile
         self.gamma = self.real_CMDP.gamma
         self.d = self.real_CMDP.d
-        lbda=np.zeros(len(self.d))
+        lbda=np.zeros(len(self.d)) + np.log(50.0)
         self.lbda = tf.Variable(lbda,dtype=np.float64)
         self.entropy_reg_constant = 5.0# by default, can override it
 
@@ -75,7 +75,7 @@ class RCPG(object):
     def update_policy(self,V, C, d, probs, grad, eta1,eta2):
         grad_p,grad_H = grad
         if self.optimiser_lbda is not None:
-            actual_lbda = tf.clip_by_value(tf.exp(self.lbda), clip_value_min=0, clip_value_max=10000)
+            actual_lbda = tf.clip_by_value(tf.exp(self.lbda), clip_value_min=0, clip_value_max=500)
             L = -(V - K.sum(actual_lbda * C)) # dL/dtheta (min_theta L)
             update = [eta1 * ((L * g) - self.entropy_reg_constant*g_H) for (g,g_H) in zip(grad_p,grad_H)]
             self.update_theta(update)
