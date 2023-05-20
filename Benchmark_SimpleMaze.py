@@ -18,6 +18,7 @@ parser.add_argument('--lr3',dest="learning_rate3",type=float,default=0.001)
 parser.add_argument('--lr4',dest="learning_rate4",type=float,default=0.0001)
 parser.add_argument('--folder',dest="folder",type=str,default="LogsAdversarialRCPG")
 parser.add_argument('--run',dest="run",type=int,default=0)
+parser.add_argument('--real_its',dest="real_its",type=int,default=100)
 args = parser.parse_args()
 
 if __name__ == "__main__":
@@ -71,7 +72,7 @@ if __name__ == "__main__":
 
     pi = StochasticPol(D_S,D_A)
     sim_iterations = 5000
-    real_iterations = 100
+    real_iterations = args.real_its
     train_iterations = 1
     test_its = 50
     gamma = 0.99
