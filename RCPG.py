@@ -113,7 +113,15 @@ class RCPG(object):
                 # else: nothing to update for the last step
             elif self.uncertainty_set.critic:
                 # add info to the critic
-                self.uncertainty_set.update_critic(s, C)
+                if self.uncertainty_set.critic_type == "C":
+                    self.uncertainty_set.update_cost_critic(s, C)
+                elif self.uncertainty_set.critic_type == "V":
+                    self.uncertainty_set.update_value_critic(s, V)
+                elif self.uncertainty_set.critic_type == "L":
+                    self.uncertainty_set.update_cost_critic(s, C)
+                    self.uncertainty_set.update_value_critic(s, V)
+                else:
+                    raise Exception("critic type "+self.uncertainty_set.critic_type+" not found. Use either 'C', 'V', or 'L'")
                 self.logfile.write(
                     "%.4f \t %s  \n" % (K.eval(L), str(K.eval(actual_lbda))))
                 self.logfile.flush()
@@ -123,7 +131,7 @@ class RCPG(object):
             # print("L",L)
             # print("lbda",actual_lbda)
         if self.uncertainty_set.critic:
-            l = actual_lbda if self.uncertainty_set.using_lbda else None
+            l = K.eval(actual_lbda)
             self.uncertainty_set.train_critic(l)
 
         if PRINTING:

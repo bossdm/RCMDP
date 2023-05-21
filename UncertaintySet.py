@@ -8,13 +8,13 @@ import pickle
 from RCMDP.Utils import check_folder
 from collections import OrderedDict
 import time
-PRINTING=False
+PRINTING=True
 N_NORM_SAMPLES=100
 
 class BaseUncertaintySet(object):
     adversarial = False
     critic = False
-    def __init__(self,states,actions,next_states,centroids=[],use_offset=False):
+    def __init__(self,states,actions,next_states,centroids=None,use_offset=False):
         self.S=len(states)
         self.A=len(actions)
         self.NS=len(next_states)
@@ -85,7 +85,7 @@ class BaseUncertaintySet(object):
 
 class HoeffdingSet(BaseUncertaintySet):
 
-    def __init__(self,using_lbda,delta, states,actions, next_states,D_S, D_A,D_C,centroids=[],use_offset=False,writefile=None):
+    def __init__(self,critic_type,delta, states,actions, next_states,D_S, D_A,D_C,centroids=None,use_offset=False,writefile=None):
         BaseUncertaintySet.__init__(self,states,actions,next_states,centroids,use_offset)
         self.critic = True
         self.adversarial = False
@@ -93,11 +93,20 @@ class HoeffdingSet(BaseUncertaintySet):
         self.alpha=np.zeros((self.S,self.A))
         self.D_S = D_S
         self.D_A = D_A
+        self.D_C = D_C
         self.writefile=writefile
         self.U_updates=0
         self.batch = []
-        self.C = Critic(self.D_S,D_C)
-        self.using_lbda = using_lbda
+        self.critic_type = critic_type
+        if self.critic_type == "V":
+            self.V = Critic(self.D_S,1)
+        elif self.critic_type == "C":
+            self.C = Critic(self.D_S,self.D_C)
+        elif self.critic_type == "L":
+            self.V = Critic(self.D_S, 1)
+            self.C = Critic(self.D_S, self.D_C)
+        else:
+            raise Exception("critic type "+self.critic_type+" not found. Use either 'C', 'V', or 'L'")
         self.set_cumulativecost(lbda=None) # initialisation never uses lambda
 
     def set_cumulativecost(self,lbda): # keep dict of cost of states in exactly the order as the states occur and are indexed
@@ -110,30 +119,53 @@ class HoeffdingSet(BaseUncertaintySet):
         or b) a simple sum
         """
 
-        Costs = self.C.predict([state])[0]
+        if self.critic_type == "V":
+            Costs = - self.V.predict([state])[0]
+        elif self.critic_type == "C":
+            Costs = self.C.predict([state])[0]
+            if lbda is None:
+                lbda = np.ones(len(Costs))
+        elif self.critic_type == "L":
+            V = - self.V.predict([state])[0]
+            Costs = self.C.predict([state])[0]
+            Costs = np.vstack((V,Costs))
+            if lbda is None:
+                lbda = np.ones(len(Costs))
+            else:
+                lbda = np.vstack((np.array([1.0]),lbda))
+        else:
+            raise Exception("critic type "+self.critic_type+" not found. Use either 'C', 'V', or 'L'")
 
         if len(Costs) == 1:
             s = Costs[0]
         elif len(Costs) > 1:
-            if lbda is None:
-                s = sum(Costs)
-            else:
-                s = K.eval(K.sum(lbda*Costs))
+            s = np.sum(lbda*Costs)
         else:
             raise Exception("no cost vector should have zero length")
         if PRINTING:
-            if lbda is not None:
-                print("lbda ",K.eval(lbda))
+            print("lbda ",lbda)
             print("Critic costs ", Costs)
             print("summed costs ", s)
         return s
-    def update_critic(self,x,y):
+    def update_cost_critic(self,x,y):
         # if PRINTING:
         #     print("x", x)
         #     print("y", y)
         self.C.add_to_batch(x,y)
+    def update_value_critic(self,x,y):
+        # if PRINTING:
+        #     print("x", x)
+        #     print("y", y)
+        self.V.add_to_batch(x,y)
     def train_critic(self,lbda):
-        self.C.train()
+        if self.critic_type == "V":
+            self.V.train()
+        elif self.critic_type == "C":
+            self.C.train()
+        else:
+            self.V.train()
+            self.C.train()
+
         self.set_cumulativecost(lbda)
     def add_visits(self,trajectory):
         for s,a_index,_r,_c,s_next,_grad,_probs,_grad_adv,_probs in trajectory:
@@ -251,7 +283,7 @@ class AdversarialHoeffdingSet(BaseUncertaintySet):
     uncertainty set based on Hoeffding; adds adversarial agent to solve the inner problem approximately
     """
 
-    def __init__(self,delta, states,actions, next_states,D_S, D_A, optimiser_theta,optimiser_lbda,centroids=[],
+    def __init__(self,delta, states,actions, next_states,D_S, D_A, optimiser_theta,optimiser_lbda,centroids=None,
                  use_offset=False, writefile=None,min_count=50):
         BaseUncertaintySet.__init__(self,states,actions,next_states,centroids,use_offset)
         self.delta = delta # desired confidence level
