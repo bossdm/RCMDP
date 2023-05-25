@@ -14,7 +14,7 @@ class Critic(object):
         self.C = Sequential()
         self.C.add(Dense(100, name="hidden1",activation="relu",kernel_initializer='uniform', input_shape=(D_S,)))
         self.C.add(Dense(D_C, name="output",activation="linear"))
-        self.C.compile(optimizer=Adam(learning_rate=0.1),loss="MSE")
+        self.C.compile(optimizer=Adam(learning_rate=0.001),loss="MSE")
         self.batch_x = []
         self.batch_y = []
 
