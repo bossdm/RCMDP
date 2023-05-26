@@ -53,7 +53,7 @@ def agent_env_loop(env,agent,args,episodeCount,episodeLimit,using_nextstate=Fals
     env.episodeScoreList = []
     env.episodeConstraintList = []
     # Run outer loop until the episodes limit is reached or the task is solved
-    while not solved and episodeCount <= episodeLimit:
+    while not solved and episodeCount < episodeLimit:
         s = env.reset()  # Reset robot and get starting observation
         if PRINTING:
             print("start episode at state ",s)
