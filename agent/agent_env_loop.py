@@ -28,7 +28,7 @@ def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,f
     env.episodeScoreList.append(env.episodeScore)
     env.episodeConstraintList.append(env.episodeConstraint)
 def after_loop(env,agent,folder,episodeCount,solved):
-    if env.stage == "training" or env.stage == "data": # this was a training session or we need the uncertainty set
+    if env.stage == "train" or env.stage == "data": # this was a training session or we need the uncertainty set
         agent.save(folder+"/models_and_plots/",episodeCount - 1)  # - 1 because episodeCount already incremented
         if not solved:
             print("Reached episode limit and task was not solved.")

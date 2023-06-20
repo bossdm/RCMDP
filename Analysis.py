@@ -218,7 +218,7 @@ if __name__ == "__main__":
     H=gamma/(1-gamma)
     factor = H / 200.
     d=4 * factor
-    tag="Experience1000"
+    tag="Experience10000"
     folder="FinalMaze_ResultsCritic0.001Delta0.9"+tag+"/"
     methods=["AdversarialRCPG_Hoeffding","RCPG_Hoeffding_V","RCPG_Hoeffding_C","RCPG_Hoeffding_L","CPG","PG"]
     plot_test_value_by_perturbation(folder=folder,methods=methods,labels=labels,runs=runs,perturbs=perturbs, test_its=test_its,tag=tag)
