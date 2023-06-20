@@ -20,11 +20,12 @@ def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,f
             agent.save(folder+"/models_and_plots/", episodeCount)
         solved = env.solved()  # Check whether the task is solved
         check_folder(folder + "/performance/")
-        writefile = open(folder + "/performance/" + env.stage + ".txt", "w+")
+        writefile = open(folder + "/performance/" + env.stage + ".txt", "a")
         writefile.write("%.4f " % (env.episodeScore,))
         for j in range(len(env.d)):
             writefile.write("\t %.4f" % (env.episodeConstraint[j],))
         writefile.write("\n")
+        writefile.flush()
     elif env.stage == "test":  # "test"
         agent.testStep()
         if PRINTING:
