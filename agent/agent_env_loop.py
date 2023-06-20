@@ -19,6 +19,12 @@ def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,f
                 print("saving at episode count " + str(episodeCount))
             agent.save(folder+"/models_and_plots/", episodeCount)
         solved = env.solved()  # Check whether the task is solved
+        check_folder(folder + "/performance/")
+        writefile = open(folder + "/performance/" + env.stage + ".txt", "w+")
+        writefile.write("%.4f " % (env.episodeScore,))
+        for j in range(len(env.d)):
+            writefile.write("\t %.4f" % (env.episodeConstraint[j],))
+        writefile.write("\n")
     elif env.stage == "test":  # "test"
         agent.testStep()
         if PRINTING:
@@ -34,13 +40,6 @@ def after_loop(env,agent,folder,episodeCount,solved):
             print("Reached episode limit and task was not solved.")
         else:
             print("Task is solved.")
-    check_folder(folder+"/performance/")
-    writefile = open(folder+"/performance/"+env.stage+".txt","w")
-    for i in range(len(env.episodeScoreList)):
-        writefile.write("%.4f "%(env.episodeScoreList[i],))
-        for j in range(len(env.d)):
-            writefile.write("\t %.4f" % (env.episodeConstraintList[i][j],))
-        writefile.write("\n")
     print("avg score ", np.mean(env.episodeScoreList))
     print("avg constraint ", np.mean(env.episodeConstraintList))
 
