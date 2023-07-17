@@ -50,9 +50,11 @@ def plot_sim_overshoot_development(folder,methods,labels,runs,d,its,snaps,tag): 
         np.stack(plotline)
         m = np.mean(plotline,axis=0) - d
         s = np.std(plotline,axis=0)/np.sqrt(len(runs))
-        x=np.array(list(range(len(plotline[0]))))
+        x=np.array(list(range(0,its,step)))
         plots.append(ax.plot(x,m)[0])
         ax.fill_between(x, m-s,m+s,alpha=0.25)
+    ax.set_xlabel('Episodes')
+    ax.set_ylabel('Overshoot')
     ax.legend(plots,labels)
     plt.savefig("sim_overshoot_development_"+tag+".pdf")
 
@@ -69,14 +71,18 @@ def plot_sim_value_development(folder,methods,labels,runs,its,snaps,tag): # data
         np.stack(plotline)
         m = np.mean(plotline,axis=0)
         s = np.std(plotline,axis=0)/np.sqrt(len(runs))
-        x=np.array(list(range(len(plotline[0]))))
+        x=np.array(list(range(0,its,step)))
         plots.append(ax.plot(x,m)[0])
         ax.fill_between(x, m-s,m+s,alpha=0.25)
+    ax.set_xlabel('Episodes')
+    ax.set_ylabel('Value')
     ax.legend(plots,labels)
     plt.savefig("sim_value_development_"+tag+".pdf")
 
 def table_test_overshoot(folder,methods,runs,d,tag,N_perturbs): # data comes from test_performance_stochastic.txt
     file=open("test_overshoot_"+tag+".txt","w")
+    file.write(r"& Mean & $F_{\alpha}$ & $\text{CVaR}_{\alpha}$")
+    file.write("\n")
     for i, method in enumerate(methods):
         means = []
         CVaRs = []
@@ -101,11 +107,13 @@ def table_test_overshoot(folder,methods,runs,d,tag,N_perturbs): # data comes fro
         C = np.mean(overshoots,axis=0)
         s_C = np.std(CVaRs, axis=0) / np.sqrt(len(runs))
         file.write(labels[i] + " ")
-        file.write(r"& $ %.4f \pm %.2f$ & $%.4f \pm %.2f$ & $%.4f \pm %.2f$ "%(m,s,F,s_F,C,s_C))
+        file.write(r"& $ %.1f \pm %.1f$ & $%.1f \pm %.1f$ & $%.1f \pm %.1f$ "%(m,s,F,s_F,C,s_C))
         file.write("\n")
 
 def table_test_value(folder,methods,runs,tag,N_perturbs): # data comes from test_performance_stochastic.txt
     file=open("test_value_"+tag+".txt","w")
+    file.write(r"& Mean & $F_{\alpha}$ & $\text{CVaR}_{\alpha}$")
+    file.write("\n")
     for i, method in enumerate(methods):
         means = []
         CVaRs = []
@@ -127,11 +135,13 @@ def table_test_value(folder,methods,runs,tag,N_perturbs): # data comes from test
         C = np.mean(CVaRs,axis=0)
         s_C = np.std(CVaRs, axis=0) / np.sqrt(len(runs))
         file.write(labels[i] + " ")
-        file.write(r"& $ %.4f \pm %.2f$ & $%.4f \pm %.2f$ & $%.4f \pm %.2f$ "%(m,s,F,s_F,C,s_C))
+        file.write(r"& $ %.1f \pm %.1f$ & $%.1f \pm %.1f$ & $%.1f \pm %.1f$ "%(m,s,F,s_F,C,s_C))
         file.write("\n")
 
 def table_test_Rpenalised(folder,methods,runs,tag,scale,N_perturbs):
     file = open("test_Rpenalised_" + tag + ".txt", "w")
+    file.write(r"& $R_{pen}$")
+    file.write("\n")
     for i, method in enumerate(methods):
         values=[]
         overshoots=[]
@@ -147,11 +157,12 @@ def table_test_Rpenalised(folder,methods,runs,tag,scale,N_perturbs):
         Rpen = np.array(values) - scale*np.array(overshoots)
         m = np.mean(Rpen)
         s = np.std(Rpen) / np.sqrt(len(runs))
+
         file.write(labels[i] + " ")
-        file.write(r"& $ %.4f \pm %.2f$ " % (m,s))
+        file.write(r"& $ %.1f \pm %.1f$ " % (m,s))
         file.write("\n")
 
-def plot_test_overshoot_by_perturbation(folder,methods,labels,runs,d,perturbs,test_its,tag): # data comes from last N_test*test_its data points in the real_cmdp_log.txt
+def plot_test_overshoot_by_perturbation(folder,methods,labels,runs,d,perturbs,test_its,tag,parameter="Parameter"): # data comes from last N_test*test_its data points in the real_cmdp_log.txt
     fig, ax = plt.subplots()
     N_perturbs=len(perturbs)
     plots = []
@@ -176,10 +187,12 @@ def plot_test_overshoot_by_perturbation(folder,methods,labels,runs,d,perturbs,te
         stds=np.array(stds)
         plots.append(ax.plot(x, ms)[0])
         ax.fill_between(x, ms - stds, ms + stds,alpha=0.25)
+    ax.set_xlabel(parameter)
+    ax.set_ylabel('Overshoot')
     ax.legend(plots,labels)
     plt.savefig("test_overshoot_by_perturbation_"+tag+".pdf")
 
-def plot_test_value_by_perturbation(folder,methods,labels,runs,perturbs,test_its,tag): # data comes from last N_test*test_its data points in the real_cmdp_log.txt
+def plot_test_value_by_perturbation(folder,methods,labels,runs,perturbs,test_its,tag,parameter="Parameter"): # data comes from last N_test*test_its data points in the real_cmdp_log.txt
     fig, ax = plt.subplots()
     N_perturbs=len(perturbs)
     plots=[]
@@ -204,6 +217,8 @@ def plot_test_value_by_perturbation(folder,methods,labels,runs,perturbs,test_its
         stds=np.array(stds)
         plots.append(ax.plot(x, ms)[0])
         ax.fill_between(x, ms - stds, ms + stds,alpha=0.25)
+    ax.set_xlabel(parameter)
+    ax.set_ylabel('Value')
     ax.legend(plots,labels)
     plt.savefig("test_value_by_perturbation_"+tag+".pdf")
 
@@ -221,9 +236,10 @@ if __name__ == "__main__":
     tag="Experience10000"
     folder="FinalMaze_ResultsCritic0.001Delta0.9"+tag+"/"
     methods=["AdversarialRCPG_Hoeffding","RCPG_Hoeffding_V","RCPG_Hoeffding_C","RCPG_Hoeffding_L","CPG","PG"]
-    plot_test_value_by_perturbation(folder=folder,methods=methods,labels=labels,runs=runs,perturbs=perturbs, test_its=test_its,tag=tag)
+    plot_test_value_by_perturbation(folder=folder,methods=methods,labels=labels,runs=runs,perturbs=perturbs, test_its=test_its,
+                                    tag=tag,parameter=r"$P_{success}$")
     plot_test_overshoot_by_perturbation(folder=folder, methods=methods, labels=labels,runs=runs,d=d,
-                                    perturbs=perturbs, test_its=test_its,tag=tag)
+                                    perturbs=perturbs, test_its=test_its,tag=tag,parameter=r"$P_{success}$")
     plot_sim_overshoot_development(folder=folder,methods=methods,labels=labels,runs=runs,d=d,its=sim_its,snaps=20,tag=tag)
     plot_sim_value_development(folder=folder, methods=methods,labels=labels, runs=runs,its=sim_its,snaps=20,tag=tag)
     table_test_value(folder=folder,methods=methods,runs=runs,tag=tag,N_perturbs=len(perturbs))
