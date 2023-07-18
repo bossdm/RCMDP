@@ -41,11 +41,12 @@ if __name__ == "__main__":
         #s_next = [np.clip(x,0,4),np.clip(y,0,4)]
         return -1.0  # go to the goal location as quickly as possible (-8 is optimal)
 
+    costly_cells = [(1,y) for y in range(4)] + [(3,2),(3,3),(3,4)]
     def c_real(s_next):  # try to reach the
         x, y = s_next
         xx = np.clip(x ,0,4)
         yy = np.clip(y,0,4)
-        return np.array([1.0],dtype=float) if xx - yy > 1 else np.array([0.0],dtype=float)  # go vertical first rather than horizontal first
+        return np.array([1.0],dtype=float) if (xx,yy) in costly_cells else np.array([0.0],dtype=float)  # go vertical first rather than horizontal first
 
     def P_real(successprob):
         def P(s,a):
@@ -111,3 +112,4 @@ if __name__ == "__main__":
         test_constraints.append(float(y))
     testperformancefile = open(args.folder + "/test_performance_deterministic.txt", "w")
     testperformancefile.write("%.4f \t %.4f \t %.4f \t %.4f \n"%(np.mean(test_values),np.std(test_values),np.mean(test_constraints),np.std(test_constraints)))
+    
