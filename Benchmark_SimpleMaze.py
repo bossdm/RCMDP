@@ -48,14 +48,19 @@ if __name__ == "__main__":
         yy = np.clip(y,0,4)
         return np.array([1.0],dtype=float) if (xx,yy) in costly_cells else np.array([0.0],dtype=float)  # go vertical first rather than horizontal first
 
-    def P_real(successprob):
+    def P_real(successprob,delta=None):
         def P(s,a):
             x, y = s
             r= random.random()
             if r < successprob:
                 s_next = [np.clip(x + a[0], 0, 4), np.clip(y + a[1],0,4)]
             else:
-                s_next = [np.clip(x, 0, 4), np.clip(y,0,4)]
+                if delta is None:
+                    dx=0
+                    dy=0
+                else:
+                    dx, dy = delta[s,a]
+                s_next = [np.clip(x+dx, 0, 4), np.clip(y+dy,0,4)]
             return s_next
         return P
     gamma=0.99
@@ -83,7 +88,7 @@ if __name__ == "__main__":
                     train_iterations,use_offset=True)
     method.train()
 
-    # test stochastic
+    # P_success test stochastic
     for t in tests:
         method.real_CMDP = t
         for i in range(test_its):
@@ -98,7 +103,7 @@ if __name__ == "__main__":
     testperformancefile = open(args.folder + "/test_performance_stochastic.txt", "w")
     testperformancefile.write("%.4f \t %.4f \t %.4f \t %.4f \n"%(np.mean(test_values),np.std(test_values),np.mean(test_constraints),np.std(test_constraints)))
 
-    # test deterministic
+    # P_success test deterministic
     for t in tests:
         method.real_CMDP = t
         for i in range(test_its):
@@ -112,4 +117,40 @@ if __name__ == "__main__":
         test_constraints.append(float(y))
     testperformancefile = open(args.folder + "/test_performance_deterministic.txt", "w")
     testperformancefile.write("%.4f \t %.4f \t %.4f \t %.4f \n"%(np.mean(test_values),np.std(test_values),np.mean(test_constraints),np.std(test_constraints)))
-    
+
+
+    # random perturb test stochastic
+    np.random.seed()
+    perturb_tests = []
+    for i in range(250):
+        delta = np.random.randint(-1,2,(len(states),len(actions))) # [0,1]
+        P_perturbed = P_real(0.80,delta)
+        perturb_tests.append(CMDP(p_0,r_real,c_real,P_perturbed,states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile))
+    for t in perturb_tests:
+        method.real_CMDP = t
+        for i in range(test_its):
+            method.test(False)
+    test_values=[]
+    test_constraints=[]
+    lines = list(csv.reader(open(args.folder + "/real_cmdp_log.txt", 'r'), delimiter='\t'))
+    for line in lines[-len(tests)*test_its:]:
+        x,y=line
+        test_values.append(float(x))
+        test_constraints.append(float(y))
+    testperformancefile = open(args.folder + "/perturb_test_performance_stochastic.txt", "w")
+    testperformancefile.write("%.4f \t %.4f \t %.4f \t %.4f \n"%(np.mean(test_values),np.std(test_values),np.mean(test_constraints),np.std(test_constraints)))
+
+    # test deterministic
+    for t in perturb_tests:
+        method.real_CMDP = t
+        for i in range(test_its):
+            method.test(True)
+    test_values=[]
+    test_constraints=[]
+    lines = list(csv.reader(open(args.folder + "/real_cmdp_log.txt", 'r'), delimiter='\t'))
+    for line in lines[-len(tests)*test_its:]:
+        x,y=line
+        test_values.append(float(x))
+        test_constraints.append(float(y))
+    testperformancefile = open(args.folder + "/perturb_test_performance_deterministic.txt", "w")
+    testperformancefile.write("%.4f \t %.4f \t %.4f \t %.4f \n"%(np.mean(test_values),np.std(test_values),np.mean(test_constraints),np.std(test_constraints)))
