@@ -120,16 +120,22 @@ if __name__ == "__main__":
 
 
     # random perturb test stochastic
-    np.random.seed()
+    np.random.seed(args.run)
     perturb_tests = []
-    for i in range(250):
-        delta = np.random.randint(-1,2,(len(states),len(actions))) # [0,1]
-        P_perturbed = P_real(0.80,delta)
-        perturb_tests.append(CMDP(p_0,r_real,c_real,P_perturbed,states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile))
+    distortions = [1,2,5,10,20]
+    state_actions=[(s,a) for s,state in enumerate(states) for a,action in enumerate(actions)]
+    for N in distortions:
+        # distort with low probability (don't want to change every state-action pair, that would be too severe)
+        for it in range(test_its):
+            idx=np.random.choice(range(len(state_actions)), (N,), replace=False)
+            delta=np.zeros((len(states),len(actions)))
+            for id in idx:
+                s,a = state_actions[id]
+                delta[s,a] = -1 + 2*np.random.randint(0,2) # {-1,1}
+            perturb_tests.append(CMDP(p_0,r_real,c_real, P_real(0.80,delta),states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile))
     for t in perturb_tests:
         method.real_CMDP = t
-        for i in range(test_its):
-            method.test(False)
+        method.test(False)
     test_values=[]
     test_constraints=[]
     lines = list(csv.reader(open(args.folder + "/real_cmdp_log.txt", 'r'), delimiter='\t'))
@@ -143,8 +149,7 @@ if __name__ == "__main__":
     # test deterministic
     for t in perturb_tests:
         method.real_CMDP = t
-        for i in range(test_its):
-            method.test(True)
+        method.test(True)
     test_values=[]
     test_constraints=[]
     lines = list(csv.reader(open(args.folder + "/real_cmdp_log.txt", 'r'), delimiter='\t'))

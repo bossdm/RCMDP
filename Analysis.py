@@ -33,7 +33,7 @@ def get_data_from_file(filename,columns,lines=None,linesExclude=None):
     for line in lines:
         row = rows[line]
         r = row.strip().split('\t')
-        print(r)
+        print(line, r)
         data.append([float(r[c]) for c in columns])
     return data
 
@@ -79,7 +79,7 @@ def plot_sim_value_development(folder,methods,labels,runs,its,snaps,tag): # data
     ax.legend(plots,labels)
     plt.savefig("sim_value_development_"+tag+".pdf")
 
-def table_test_overshoot(folder,methods,runs,d,tag,N_perturbs): # data comes from test_performance_stochastic.txt
+def table_test_overshoot(folder,methods,runs,d,tag,N_perturbs,start): # data comes from test_performance_stochastic.txt
     file=open("test_overshoot_"+tag+".txt","w")
     file.write(r"& Mean & $F_{\alpha}$ & $\text{CVaR}_{\alpha}$")
     file.write("\n")
@@ -87,8 +87,7 @@ def table_test_overshoot(folder,methods,runs,d,tag,N_perturbs): # data comes fro
         means = []
         CVaRs = []
         F_alphas = []
-        start = -2 * N_perturbs * test_its  # take the stochastic runs rather than deterministic runs
-        end = -N_perturbs * test_its
+        end = start + N_perturbs * test_its
         for run in runs:
             data = get_data_from_file(folder + method + "/run" + str(run) + "/real_cmdp_log.txt", columns=[1], lines=range(start,end))
             data = [dat[0] for dat in data]  # flatten the list of lists
@@ -110,7 +109,7 @@ def table_test_overshoot(folder,methods,runs,d,tag,N_perturbs): # data comes fro
         file.write(r"& $ %.1f \pm %.1f$ & $%.1f \pm %.1f$ & $%.1f \pm %.1f$ "%(m,s,F,s_F,C,s_C))
         file.write("\n")
 
-def table_test_value(folder,methods,runs,tag,N_perturbs): # data comes from test_performance_stochastic.txt
+def table_test_value(folder,methods,runs,tag,N_perturbs,start): # data comes from test_performance_stochastic.txt
     file=open("test_value_"+tag+".txt","w")
     file.write(r"& Mean & $F_{\alpha}$ & $\text{CVaR}_{\alpha}$")
     file.write("\n")
@@ -118,8 +117,7 @@ def table_test_value(folder,methods,runs,tag,N_perturbs): # data comes from test
         means = []
         CVaRs = []
         F_alphas = []
-        start = -2 * N_perturbs * test_its  # take the stochastic runs rather than deterministic runs
-        end = -N_perturbs * test_its
+        end =  start + N_perturbs * test_its
         for run in runs:
             data = get_data_from_file(folder + method + "/run" + str(run) + "/real_cmdp_log.txt", columns=[0], lines=range(start,end))
             data = [dat[0] for dat in data]  # flatten the list of lists
@@ -138,14 +136,13 @@ def table_test_value(folder,methods,runs,tag,N_perturbs): # data comes from test
         file.write(r"& $ %.1f \pm %.1f$ & $%.1f \pm %.1f$ & $%.1f \pm %.1f$ "%(m,s,F,s_F,C,s_C))
         file.write("\n")
 
-def table_test_Rpenalised(folder,methods,runs,tag,scale,N_perturbs):
+def table_test_Rpenalised(folder,methods,runs,tag,scale,N_perturbs,start):
     file = open("test_Rpenalised_" + tag + ".txt", "w")
     file.write(r"& $R_{pen}$")
     file.write("\n")
     for i, method in enumerate(methods):
         values=[]
         overshoots=[]
-        start = -2 * N_perturbs * test_its  # take the stochastic runs rather than deterministic runs
         end = -N_perturbs * test_its
         for run in runs:
             data = get_data_from_file(folder + method + "/run" + str(run) +  "/real_cmdp_log.txt", columns=[0,1],
@@ -162,14 +159,14 @@ def table_test_Rpenalised(folder,methods,runs,tag,scale,N_perturbs):
         file.write(r"& $ %.1f \pm %.1f$ " % (m,s))
         file.write("\n")
 
-def plot_test_overshoot_by_perturbation(folder,methods,labels,runs,d,perturbs,test_its,tag,parameter="Parameter"): # data comes from last N_test*test_its data points in the real_cmdp_log.txt
+def plot_test_overshoot_by_perturbation(folder,methods,labels,runs,d,begin,perturbs,test_its,tag,parameter="Parameter"): # data comes from last N_test*test_its data points in the real_cmdp_log.txt
     fig, ax = plt.subplots()
     N_perturbs=len(perturbs)
     plots = []
     for method in methods:
         ms=[]
         stds=[]
-        start = -2*N_perturbs*test_its # take the stochastic runs rather than deterministic runs
+        start=begin
         for perturb in range(N_perturbs):
             plotline = []
             for run in runs:
@@ -192,14 +189,14 @@ def plot_test_overshoot_by_perturbation(folder,methods,labels,runs,d,perturbs,te
     ax.legend(plots,labels)
     plt.savefig("test_overshoot_by_perturbation_"+tag+".pdf")
 
-def plot_test_value_by_perturbation(folder,methods,labels,runs,perturbs,test_its,tag,parameter="Parameter"): # data comes from last N_test*test_its data points in the real_cmdp_log.txt
+def plot_test_value_by_perturbation(folder,methods,labels,runs,perturbs,test_its,begin,tag,parameter="Parameter"): # data comes from last N_test*test_its data points in the real_cmdp_log.txt
     fig, ax = plt.subplots()
     N_perturbs=len(perturbs)
     plots=[]
     for method in methods:
         ms=[]
         stds=[]
-        start = -2*N_perturbs*test_its
+        start = begin
         for perturb in range(N_perturbs):
             plotline = []
             for run in runs:
@@ -223,8 +220,8 @@ def plot_test_value_by_perturbation(folder,methods,labels,runs,perturbs,test_its
     plt.savefig("test_value_by_perturbation_"+tag+".pdf")
 
 if __name__ == "__main__":
-    labels = ["Adversarial RCPG","RCPG (Robust value)","RCPG (Robust constraint)","RCPG (Robust Lagrangian)", "CPG", "PG"]
-    runs=range(1,11)
+    labels = ["Adversarial RCPG","RCPG (Robust value)","RCPG (Robust constraint)","CPG","PG"]  #"RCPG (Robust Lagrangian)", "CPG", "PG"]
+    runs=range(1,30)
     perturbs=[0.6,0.7,0.8,0.9,1.0]
     test_its=50
     sim_its=5000
@@ -233,18 +230,38 @@ if __name__ == "__main__":
     H=gamma/(1-gamma)
     factor = H / 200.
     d=4 * factor
-    tag="Experience10000"
-    folder="FinalMaze_ResultsCritic0.001Delta0.9"+tag+"/"
-    methods=["AdversarialRCPG_Hoeffding","RCPG_Hoeffding_V","RCPG_Hoeffding_C","RCPG_Hoeffding_L","CPG","PG"]
-    plot_test_value_by_perturbation(folder=folder,methods=methods,labels=labels,runs=runs,perturbs=perturbs, test_its=test_its,
+    tag=""
+    folder="Results/"
+    methods=["AdversarialRCPG_Hoeffding","RCPG_Hoeffding_V","RCPG_Hoeffding_C","CPG","PG"]#"RCPG_Hoeffding_L","CPG","PG"]
+    start=-1000
+    #plot_sim_overshoot_development(folder=folder,methods=methods,labels=labels,runs=runs,d=d,its=sim_its,snaps=20,tag=tag)
+    #plot_sim_value_development(folder=folder, methods=methods,labels=labels, runs=runs,its=sim_its,snaps=20,tag=tag)
+    table_test_value(folder=folder,methods=methods,runs=runs,tag=tag,N_perturbs=len(perturbs),start = start)  # take the stochastic runs rather than deterministic runs)
+    table_test_overshoot(folder=folder, methods=methods, runs=runs,d=d,tag=tag,N_perturbs=len(perturbs),start = start)
+    # test Psuccess
+    perturbs = [0.6, 0.7, 0.8, 0.9, 1.0]
+    plot_test_value_by_perturbation(folder=folder,methods=methods,labels=labels,runs=runs,perturbs=perturbs, begin=start,test_its=test_its,
                                     tag=tag,parameter=r"$P_{success}$")
     plot_test_overshoot_by_perturbation(folder=folder, methods=methods, labels=labels,runs=runs,d=d,
-                                    perturbs=perturbs, test_its=test_its,tag=tag,parameter=r"$P_{success}$")
-    plot_sim_overshoot_development(folder=folder,methods=methods,labels=labels,runs=runs,d=d,its=sim_its,snaps=20,tag=tag)
-    plot_sim_value_development(folder=folder, methods=methods,labels=labels, runs=runs,its=sim_its,snaps=20,tag=tag)
-    table_test_value(folder=folder,methods=methods,runs=runs,tag=tag,N_perturbs=len(perturbs))
-    table_test_overshoot(folder=folder, methods=methods, runs=runs,d=d,tag=tag,N_perturbs=len(perturbs))
+                                    perturbs=perturbs, begin=start,test_its=test_its,tag=tag,parameter=r"$P_{success}$")
     V_max = 200
     C_max = 200
     scale = V_max/C_max
-    table_test_Rpenalised(folder, methods, runs, tag, scale, len(perturbs))
+    table_test_Rpenalised(folder, methods, runs, tag, scale, len(perturbs),start=-500)
+
+    # test delta
+    perturbs = [0.01,0.02,0.05,0.10,0.20] # 100 state-action pairs (25 * 4), and N in {1,2,5,10,20}
+    test_its = 50
+    start = -500
+
+    plot_test_value_by_perturbation(folder=folder, methods=methods, labels=labels, runs=runs, perturbs=perturbs,
+                                    test_its=test_its,
+                                    tag=tag, parameter=r"$P_{\delta}$")
+    plot_test_overshoot_by_perturbation(folder=folder, methods=methods, labels=labels, runs=runs, d=d,
+                                         perturbs=perturbs, test_its=test_its, tag=tag, parameter=r"$P_{\delta}$")
+    table_test_value(folder=folder,methods=methods,runs=runs,tag=tag,N_perturbs=len(perturbs),start=start)
+    table_test_overshoot(folder=folder, methods=methods, runs=runs,d=d,tag=tag,N_perturbs=len(perturbs),start=start)
+    V_max = 200
+    C_max = 200
+    scale = V_max / C_max
+    table_test_Rpenalised(folder, methods, runs, tag, scale, len(perturbs),start=start)
