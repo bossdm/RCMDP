@@ -124,7 +124,7 @@ if __name__ == "__main__":
     # random perturb test stochastic
     np.random.seed(args.run)
     perturb_tests = []
-    distortions = [1,2,5,10,20]
+    distortions = [5,10,20,50,100]
     state_actions=[(s,a) for s,state in enumerate(states) for a,action in enumerate(actions)]
     for N in distortions:
         # distort with low probability (don't want to change every state-action pair, that would be too severe)
