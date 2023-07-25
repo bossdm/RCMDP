@@ -31,6 +31,7 @@ if __name__ == "__main__":
     D_A=4
     D_C=len(d)
     #S=25 # 5 by 5 grid
+    states=[[i,j] for i in range(5) for j in range(5)]
     #A=4  # up,down,right, or left
     actions=[[-1,0],[1,0],[0,1],[0,-1]]
     initial_states=[[0,0]]
@@ -59,7 +60,9 @@ if __name__ == "__main__":
                     dx=0
                     dy=0
                 else:
-                    dx, dy = delta[s,a]
+                    s_idx = states.index(s)
+                    a_idx = actions.index(a)
+                    dx, dy = delta[s_idx,a_idx]
                 s_next = [np.clip(x+dx, 0, 4), np.clip(y+dy,0,4)]
             return s_next
         return P
@@ -68,7 +71,6 @@ if __name__ == "__main__":
         os.makedirs(args.folder)
         print("created new folder ",args.folder)
 
-    states=[[i,j] for i in range(5) for j in range(5)]
     next_states=[[0,0]] + actions    # relative state encoding
     realcmdp_logfile = open(args.folder + "/real_cmdp_log.txt", "w")
     real_cmdp = CMDP(p_0,r_real,c_real,P_real(0.80),states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile)
@@ -128,10 +130,10 @@ if __name__ == "__main__":
         # distort with low probability (don't want to change every state-action pair, that would be too severe)
         for it in range(test_its):
             idx=np.random.choice(range(len(state_actions)), (N,), replace=False)
-            delta=np.zeros((len(states),len(actions)))
+            delta=np.zeros((len(states),len(actions),2))
             for id in idx:
                 s,a = state_actions[id]
-                delta[s,a] = -1 + 2*np.random.randint(0,2) # {-1,1}
+                delta[s,a] = (-1 + 2*np.random.randint(0,2),-1 + 2*np.random.randint(0,2)) # {-1,1}^2
             perturb_tests.append(CMDP(p_0,r_real,c_real, P_real(0.80,delta),states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile))
     for t in perturb_tests:
         method.real_CMDP = t
