@@ -30,6 +30,13 @@ def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,f
         agent.testStep()
         if PRINTING:
             print("continue testing ")
+        check_folder(folder + "/performance/")
+        writefile = open(folder + "/performance/" + env.stage + ".txt", "a")
+        writefile.write("%.4f " % (env.episodeScore,))
+        for j in range(len(env.d)):
+            writefile.write("\t %.4f" % (env.episodeConstraint[j],))
+        writefile.write("\n")
+        writefile.flush()
     else:
         raise Exception("environment stage should be either data, train, or test. Got " + env.stage + "instead")
     env.episodeScoreList.append(env.episodeScore)
