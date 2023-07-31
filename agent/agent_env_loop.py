@@ -25,7 +25,7 @@ def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,f
         for j in range(len(env.d)):
             writefile.write("\t %.4f" % (env.episodeConstraint[j],))
         writefile.write("\n")
-        writefile.flush()
+        writefile.close()
     elif env.stage == "test":  # "test"
         agent.testStep()
         if PRINTING:
@@ -36,7 +36,7 @@ def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,f
         for j in range(len(env.d)):
             writefile.write("\t %.4f" % (env.episodeConstraint[j],))
         writefile.write("\n")
-        writefile.flush()
+        writefile.close()
     else:
         raise Exception("environment stage should be either data, train, or test. Got " + env.stage + "instead")
     env.episodeScoreList.append(env.episodeScore)
