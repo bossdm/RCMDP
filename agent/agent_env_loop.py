@@ -8,6 +8,7 @@ def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,f
         agent.uncertainty_set.add_visits(agent.buffer)
         agent.uncertainty_set.set_params()
         env.uncertainty_set = agent.uncertainty_set
+        del agent.buffer[:]
     elif env.stage == "train":
         maxActionProb = np.max(actionProbsList)
         # averageEpisodeActionProbs.append(avgActionProb)
