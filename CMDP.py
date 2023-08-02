@@ -13,7 +13,7 @@ class BaseCMDP(object):
         self.T = T
         self.terminals = terminals
         self.logfile = logfile
-    def episode(self,pi,test):
+    def episode(self,pi,test,random=False):
         R = 0
         C = 0
         s = self.p_0.generate()
@@ -23,7 +23,7 @@ class BaseCMDP(object):
             if s in self.terminals:
                 #print("stop ", s)
                 break
-            (s, a, r, c, s_next, grad,probs,grad_adv,probs_adv) = self.step(s,pi,test)
+            (s, a, r, c, s_next, grad,probs,grad_adv,probs_adv) = self.step(s,pi,test,random)
             #print(s)
             #print(a)
             trajectory.append((s, a, r, c, s_next, grad, probs,grad_adv,probs_adv))
@@ -43,8 +43,13 @@ class CMDP(BaseCMDP):
         self.logfile.write("R \t C \n")
         self.next_states=next_states # used to initalise uncertainty set's outcomes
 
-    def step(self,s,pi,test):
-        a_index, grad,probs = pi.select_action(s,deterministic=test)
+    def step(self,s,pi,test,random):
+        if random:
+            a_index = np.random.choice(list(range(len(self.actions))))
+            grad = None
+            probs = 1.0/len(self.actions)
+        else:
+            a_index, grad,probs = pi.select_action(s,deterministic=test)
         a = self.actions[a_index]
         s_next = self.P(s, a)
         c = self.c(s_next)
@@ -60,9 +65,14 @@ class RobustCMDP(CMDP):
     def from_CMDP(cls,cmdp,logfile,uncertainty_set):
         rcmdp = RobustCMDP(cmdp.p_0,cmdp.r,cmdp.c,cmdp.P,cmdp.states,cmdp.actions,cmdp.next_states,cmdp.gamma,cmdp.T,cmdp.d,cmdp.terminals,logfile,uncertainty_set)
         return rcmdp
-    def step(self,s,pi,test):
+    def step(self,s,pi,test,random):
         s_index = self.uncertainty_set.states.index(s)
-        a_index, grad, probs = pi.select_action(s,deterministic=test)
+        if random:
+            a_index = np.random.choice(list(range(len(self.actions))))
+            grad = None
+            probs = 1.0/len(self.actions)
+        else:
+            a_index, grad, probs = pi.select_action(s,deterministic=test)
         s_next, grad_adv, probs_adv = self.uncertainty_set.random_state(s_index, a_index)
         if self.uncertainty_set.use_offset:
             s_next = [np.clip(s_next[i] + s[i],self.uncertainty_set.s_min[i],self.uncertainty_set.s_max[i]) for i in range(len(s_next))]

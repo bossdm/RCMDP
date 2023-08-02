@@ -68,7 +68,7 @@ def agent_env_loop(env,agent,args,episodeCount,episodeLimit,using_nextstate=Fals
         # Inner loop is the episode loop
         for step in range(env.stepsPerEpisode):
             # # In training mode the agent samples from the probability distribution, naturally implementing exploration
-            a, grad, actionProbs = agent.work(s, test=False)
+            a, grad, actionProbs = agent.work(s, test=False,random=env.stage == "data")
             env.next_state, env.grad_adv, env.probs_adv = agent.random_state(env.s_index, a)
             s_next, r, c, done, info = env.step([a],repeat_steps=1)
             if using_nextstate:

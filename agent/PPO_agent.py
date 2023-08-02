@@ -53,7 +53,7 @@ class PPOAgent:
         # Training stats
         self.buffer = []
 
-    def work(self, agentInput, test):
+    def work(self, agentInput, test, random=False):
         """
         Forward pass of the PPO agent. Depending on the type_ argument, it either explores by sampling its actor's
         softmax output, or eliminates exploring by selecting the action with the maximum probability (argmax).

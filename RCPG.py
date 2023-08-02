@@ -69,7 +69,7 @@ class RCPG(object):
     def real_samples(self):
         for it in range(self.real_iterations):
             print("it ",it)
-            trajectory = self.real_CMDP.episode(self.pi,test=False)
+            trajectory = self.real_CMDP.episode(self.pi,test=False,random=True)
             self.uncertainty_set.add_visits(trajectory)
         self.uncertainty_set.set_params()
     def update_policy(self,V, C, d, probs, grad, eta1,eta2):

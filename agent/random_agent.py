@@ -18,7 +18,7 @@ class RandomAgent:
         self.buffer=[]
         self.trajectories=[]
 
-    def work(self, agentInput, test=False):
+    def work(self, agentInput, test=False,random=False):
         """
         random agents simply selects a random action
         """

@@ -11,7 +11,7 @@ import numpy as np
 parser = argparse.ArgumentParser(
                     prog = 'Simple maze',
                     description = 'run RL on a simple maze problem')
-parser.add_argument('--m', dest='method_name',type=str,default="AdversarialRCPG_Hoeffding")
+parser.add_argument('--m', dest='method_name',type=str,default="PG")
 parser.add_argument('--lr',dest="learning_rate",type=float,default=0.001)
 parser.add_argument('--lr2',dest="learning_rate2",type=float,default=0.0001)
 parser.add_argument('--lr3',dest="learning_rate3",type=float,default=0.001)

@@ -21,7 +21,7 @@ class RCPG_Agent(RCPG):
                  rcpg.sim_iterations, rcpg.real_iterations, rcpg.train_iterations, rcpg.lr1, rcpg.lr2, rcpg.logfile, rcpg.simlogfile)
         return agent
 
-    def work(self, s, test):
+    def work(self, s, test,random=False):
         """
         Forward pass. Depending on the type_ argument, it either explores by sampling its actor's
         softmax output, or eliminates exploring by selecting the action with the maximum probability (argmax).
@@ -31,9 +31,13 @@ class RCPG_Agent(RCPG):
         :param type_: "selectAction" or "selectActionMax", defaults to "selectAction"
         :type type_: str, optional
         """
-
-
-        return self.pi.select_action(s, deterministic=test)
+        if random:
+            a_index = np.random.choice(list(range(len(self.real_CMDP.actions))))
+            grad = None
+            probs = 1.0/len(self.real_CMDP.actions)
+            return a_index, grad, probs
+        else:
+            return self.pi.select_action(s, deterministic=test)
 
     def save(self, path, episode):
         """
