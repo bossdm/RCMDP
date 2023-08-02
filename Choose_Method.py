@@ -41,14 +41,16 @@ def choose_method(method_name,alpha1,alpha2,alpha3,alpha4,folder,D_S,D_A,D_C,pi,
                           simlogfile=simlogfile)
     elif method_name=="CPG":
         actions=[i for i in range(len(real_cmdp.actions))]
-        uncertainty_set=BaseUncertaintySet(states=real_cmdp.states,actions=actions,next_states=real_cmdp.next_states,use_offset=use_offset)
+        uncertainty_set=BaseUncertaintySet(states=real_cmdp.states,actions=actions,next_states=real_cmdp.next_states,
+                                           use_offset=use_offset,writefile=folder+"/uncertaintyset")
         opt = Adam(learning_rate=alpha1)  # note: learning rate here is further multiplied by the functions above
         opt2 = Adam(learning_rate=alpha2)  # note: learning rate here is further multiplied by the functions above
         method = RCPG(pi, real_cmdp, uncertainty_set, opt, opt2, sim_iterations, real_iterations,
                     train_iterations, lr1=lr_proportional, lr2=lr_proportional, logfile=logfile,simlogfile=simlogfile)
     elif method_name=="PG":
         actions=[i for i in range(len(real_cmdp.actions))]
-        uncertainty_set=BaseUncertaintySet(states=real_cmdp.states,actions=actions,next_states=real_cmdp.next_states,use_offset=use_offset)
+        uncertainty_set=BaseUncertaintySet(states=real_cmdp.states,actions=actions,next_states=real_cmdp.next_states,use_offset=use_offset,
+                                           writefile=folder+"/uncertaintyset")
         opt = Adam(learning_rate=alpha1)  # note: learning rate here is further multiplied by the functions above
         opt2 = None  # no constraints so no second optimiser
         method = RCPG(pi, real_cmdp, uncertainty_set, opt, opt2, sim_iterations, real_iterations,
@@ -67,7 +69,7 @@ def choose_method(method_name,alpha1,alpha2,alpha3,alpha4,folder,D_S,D_A,D_C,pi,
                     train_iterations, lr1=lr_proportional, lr2=lr_proportional,logfile=logfile,simlogfile=simlogfile)
     elif method_name=="random":
         actions=[i for i in range(len(real_cmdp.actions))]
-        method=BaseUncertaintySet(states=real_cmdp.states,actions=actions,next_states=real_cmdp.next_states)
+        method=BaseUncertaintySet(states=real_cmdp.states,actions=actions,next_states=real_cmdp.next_states,writefile=folder+"/uncertaintyset")
     elif method_name=="random_hoeffding":
         actions = [i for i in range(len(real_cmdp.actions))]
         method = HoeffdingSet(critic_type="V",delta=0.9, states=real_cmdp.states, actions=actions, next_states=real_cmdp.next_states,

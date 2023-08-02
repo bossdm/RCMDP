@@ -14,7 +14,7 @@ N_NORM_SAMPLES=100
 class BaseUncertaintySet(object):
     adversarial = False
     critic = False
-    def __init__(self,states,actions,next_states,centroids=None,use_offset=False):
+    def __init__(self,states,actions,next_states,centroids=None,use_offset=False,writefile=None):
         self.S=len(states)
         self.A=len(actions)
         self.NS=len(next_states)
@@ -28,6 +28,8 @@ class BaseUncertaintySet(object):
         state_matrix = np.array(states)
         self.s_min = np.min(state_matrix,axis=0)
         self.s_max = np.max(state_matrix,axis=0)
+        self.writefile=writefile
+        self.U_updates=0
 
 
     def get_closest(self,state):
@@ -57,12 +59,22 @@ class BaseUncertaintySet(object):
             self.data[s_index, a_index, s_next_index] += 1  # add trajectory to the data counts
 
     def set_params(self):
+
+        if self.writefile is not None:
+            f = open(self.writefile+str(self.U_updates)+".txt","w")
+            self.U_updates += 1
         self.visits = np.sum(self.data,
                              axis=2)  # sum over third axis (don't care about next state, only the sa-visitations
         for s_index in range(self.S):
             for a_index in range(self.A):
                 if self.visits[s_index, a_index] > 0: #otherwise keep at uniform random
                     self.nominal[s_index, a_index] = self.data[s_index, a_index] / self.visits[s_index, a_index]
+                f.write("%d \t %d \t %d " % (
+                s_index, a_index, self.visits[s_index, a_index]))
+                for s_next_index in range(self.NS):
+                    f.write("\t %.4f" % (self.nominal[s_index, a_index, s_next_index]))
+                f.write("\n")
+        f.close()
     def random_state(self,s,a):
         try:
             s_next_index = np.random.choice(self.NS,p=self.nominal[s,a])
@@ -86,7 +98,7 @@ class BaseUncertaintySet(object):
 class HoeffdingSet(BaseUncertaintySet):
 
     def __init__(self,critic_type,delta, states,actions, next_states,D_S, D_A,D_C,centroids=None,use_offset=False,writefile=None):
-        BaseUncertaintySet.__init__(self,states,actions,next_states,centroids,use_offset)
+        BaseUncertaintySet.__init__(self,states,actions,next_states,centroids,use_offset,writefile)
         self.critic = True
         self.adversarial = False
         self.delta = delta # desired confidence level
@@ -94,8 +106,6 @@ class HoeffdingSet(BaseUncertaintySet):
         self.D_S = D_S
         self.D_A = D_A
         self.D_C = D_C
-        self.writefile=writefile
-        self.U_updates=0
         self.batch = []
         self.critic_type = critic_type
         if self.critic_type == "V":
