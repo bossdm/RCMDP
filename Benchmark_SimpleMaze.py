@@ -25,7 +25,7 @@ if __name__ == "__main__":
     np.random.seed(args.run)
     args.folder+="/run"+str(args.run)
     #d=200   --> budget way too big so solution has C(theta) - d < 0 (inactive constraint) --> see that lbda converges to 0
-    d=[4]
+    d=[1.0]
     T=200
     D_S=2  #(x,y) coordinates
     D_A=4
