@@ -55,7 +55,7 @@ class CMDP(BaseCMDP):
         c = self.c(s_next)
         r = self.r(s_next)
         #print("s_next ",s_next)
-        return (s, a, r, c, s_next,grad,probs,None,None)
+        return (s, a_index, r, c, s_next,grad,probs,None,None)
 
 class RobustCMDP(CMDP):
     def __init__(self,p_0,r,c,P,states,actions,next_states,gamma,T,d,terminals,logfile,uncertainty_set):
