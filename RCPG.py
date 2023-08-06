@@ -71,7 +71,7 @@ class RCPG(object):
             print("it ",it)
             trajectory = self.real_CMDP.episode(self.pi,test=False,random=True)
             self.uncertainty_set.add_visits(trajectory)
-        self.uncertainty_set.set_params()
+            self.uncertainty_set.set_params()
     def update_policy(self,V, C, d, probs, grad, eta1,eta2):
         grad_p,grad_H = grad
         if self.optimiser_lbda is not None:

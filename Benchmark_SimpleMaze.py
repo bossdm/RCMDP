@@ -52,7 +52,7 @@ if __name__ == "__main__":
     def P_real(successprob,delta=None):
         def P(s,a):
             x, y = s
-            r= random.random()
+            r= np.random.random()
             if r < successprob:
                 s_next = [np.clip(x + a[0], 0, 4), np.clip(y + a[1],0,4)]
             else:
