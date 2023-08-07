@@ -18,14 +18,14 @@ parser.add_argument('--lr3',dest="learning_rate3",type=float,default=0.001)
 parser.add_argument('--lr4',dest="learning_rate4",type=float,default=0.0001)
 parser.add_argument('--folder',dest="folder",type=str,default="LogsAdversarialRCPG")
 parser.add_argument('--run',dest="run",type=int,default=0)
-parser.add_argument('--real_its',dest="real_its",type=int,default=10)
+parser.add_argument('--real_its',dest="real_its",type=int,default=20)
 args = parser.parse_args()
 
 if __name__ == "__main__":
     np.random.seed(args.run)
     args.folder+="/run"+str(args.run)
     #d=200   --> budget way too big so solution has C(theta) - d < 0 (inactive constraint) --> see that lbda converges to 0
-    d=[1.0]
+    d=[4.0]
     T=200
     D_S=2  #(x,y) coordinates
     D_A=4
@@ -34,15 +34,17 @@ if __name__ == "__main__":
     states=[[i,j] for i in range(5) for j in range(5)]
     #A=4  # up,down,right, or left
     actions=[[-1,0],[1,0],[0,1],[0,-1]]
+    next_states=[[0,0]] + actions    # relative state encoding
     initial_states=[[0,0]]
     p_0 = InitialDiscreteState(initial_states,probs=[1.])
     terminals=[[4,4]]
     def r_real(s_next):    # try to reach the
-        x,y = s_next
+        #x,y = s_next
         #s_next = [np.clip(x,0,4),np.clip(y,0,4)]
         return -1.0  # go to the goal location as quickly as possible (-8 is optimal)
 
     costly_cells = [(1,y) for y in range(4)] + [(3,2),(3,3),(3,4)]
+
     def c_real(s_next):  # try to reach the
         x, y = s_next
         xx = np.clip(x ,0,4)
@@ -57,13 +59,14 @@ if __name__ == "__main__":
                 s_next = [np.clip(x + a[0], 0, 4), np.clip(y + a[1],0,4)]
             else:
                 if delta is None:
-                    dx=0
-                    dy=0
+                    idx = np.random.choice(range(len(next_states)))
+                    a_r = next_states[idx]
+                    s_next = [np.clip(x + a_r[0], 0, 4), np.clip(y + a_r[1], 0, 4)]
                 else:
                     s_idx = states.index(s)
                     a_idx = actions.index(a)
                     dx, dy = delta[s_idx,a_idx]
-                s_next = [np.clip(x+dx, 0, 4), np.clip(y+dy,0,4)]
+                    s_next = [np.clip(x+dx, 0, 4), np.clip(y+dy,0,4)]
             return s_next
         return P
     gamma=0.99
@@ -71,7 +74,6 @@ if __name__ == "__main__":
         os.makedirs(args.folder)
         print("created new folder ",args.folder)
 
-    next_states=[[0,0]] + actions    # relative state encoding
     realcmdp_logfile = open(args.folder + "/real_cmdp_log.txt", "w")
     real_cmdp = CMDP(p_0,r_real,c_real,P_real(0.80),states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile)
     tests=[]
@@ -121,7 +123,7 @@ if __name__ == "__main__":
     testperformancefile.write("%.4f \t %.4f \t %.4f \t %.4f \n"%(np.mean(test_values),np.std(test_values),np.mean(test_constraints),np.std(test_constraints)))
 
 
-    # random perturb test stochastic
+    # random perturb test stochastic: fixed random action rather than variable
     np.random.seed(args.run)
     perturb_tests = []
     distortions = [5,10,20,50,100]
@@ -133,7 +135,9 @@ if __name__ == "__main__":
             delta=np.zeros((len(states),len(actions),2))
             for id in idx:
                 s,a = state_actions[id]
-                delta[s,a] = (-1 + 2*np.random.randint(0,2),-1 + 2*np.random.randint(0,2)) # {-1,1}^2
+                idx = np.random.choice(range(len(next_states)))
+                a_r = next_states[idx]
+                delta[s,a] = a_r
             perturb_tests.append(CMDP(p_0,r_real,c_real, P_real(0.80,delta),states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile))
     for t in perturb_tests:
         method.real_CMDP = t

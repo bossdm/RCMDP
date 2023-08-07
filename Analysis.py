@@ -156,7 +156,7 @@ def table_test_Rpenalised(folder,methods,runs,tag,scale,N_perturbs,start,paramet
         values=[]
         overshoots=[]
         absolute_overshoots=[]
-        end = -N_perturbs * test_its
+        end = start + N_perturbs * test_its
         for run in runs:
             data = get_data_from_file(folder + method + "/run" + str(run) +  "/real_cmdp_log.txt", columns=[0,1],
                                       lines=range(start,end))
@@ -247,9 +247,9 @@ if __name__ == "__main__":
     gamma = 0.99
     H=gamma/(1-gamma)
     factor = H / 200.
-    d=4 * factor
-    tag=""
-    folder="ResultsNew/"
+    d=4 / factor
+    tag="FINAL"
+    folder="ResultsFinal100CI90/"
     methods=["AdversarialRCPG_Hoeffding","RCPG_Hoeffding_V","RCPG_Hoeffding_C","CPG","PG"]#"RCPG_Hoeffding_L","CPG","PG"]
     start=-1250
     plot_sim_overshoot_development(folder=folder,methods=methods,labels=labels,runs=runs,d=d,its=sim_its,snaps=20,tag=tag)
@@ -257,7 +257,7 @@ if __name__ == "__main__":
     table_test_value(folder=folder,methods=methods,runs=runs,tag=tag,N_perturbs=len(perturbs),start = start, parameter="Psuccess")  # take the stochastic runs rather than deterministic runs)
     table_test_overshoot(folder=folder, methods=methods, runs=runs,d=d,tag=tag,N_perturbs=len(perturbs),start = start, parameter="Psuccess")
     # test Psuccess
-    perturbs = [0.6, 0.7, 0.8, 0.9, 1.0]
+    perturbs = [0.6,0.7,0.8,0.9,1.0]
     plot_test_value_by_perturbation(folder=folder,methods=methods,labels=labels,runs=runs,perturbs=perturbs, begin=start,test_its=test_its,
                                     tag=tag,parameter=r"$P_{success}$")
     plot_test_overshoot_by_perturbation(folder=folder, methods=methods, labels=labels,runs=runs,d=d,
@@ -265,21 +265,21 @@ if __name__ == "__main__":
     # V_max = 200
     # C_max = 200
     scale = 500 # just take the maximal lagrangian multiplier
-    table_test_Rpenalised(folder, methods, runs, tag, scale, len(perturbs),start=-500,parameter="Psuccess")
+    table_test_Rpenalised(folder, methods, runs, tag, scale, len(perturbs),start=start,parameter="Psuccess")
 
     # test delta
-    perturbs = [0.01,0.02,0.05,0.10,0.20] # 100 state-action pairs (25 * 4), and N in {1,2,5,10,20}
+    perturbs = [0.05,0.10,0.25,0.50,1.0] # 100 state-action pairs (25 * 4), and N in {5,10,25,50,100}
     test_its = 50
     start = -500
 
     plot_test_value_by_perturbation(folder=folder, methods=methods, labels=labels, runs=runs, perturbs=perturbs,begin=start,
                                     test_its=test_its,
-                                    tag=tag, parameter=r"$P_{\delta}$")
+                                    tag=tag, parameter=r"$P_{\epsilon}$")
     plot_test_overshoot_by_perturbation(folder=folder, methods=methods, labels=labels, runs=runs, d=d,
-                                         perturbs=perturbs, begin=start, test_its=test_its, tag=tag, parameter=r"$P_{\delta}$")
-    table_test_value(folder=folder,methods=methods,runs=runs,tag=tag,N_perturbs=len(perturbs),start=start,parameter="Pdelta")
-    table_test_overshoot(folder=folder, methods=methods, runs=runs,d=d,tag=tag,N_perturbs=len(perturbs),start=start,parameter="Pdelta")
+                                         perturbs=perturbs, begin=start, test_its=test_its, tag=tag, parameter=r"$P_{\epsilon}$")
+    table_test_value(folder=folder,methods=methods,runs=runs,tag=tag,N_perturbs=len(perturbs),start=start,parameter="Pepsilon")
+    table_test_overshoot(folder=folder, methods=methods, runs=runs,d=d,tag=tag,N_perturbs=len(perturbs),start=start,parameter="Pepsilon")
     # V_max = 200
     # C_max = 200
     scale = 500 #
-    table_test_Rpenalised(folder, methods, runs, tag, scale, len(perturbs),start=start,parameter="Psuccess")
+    table_test_Rpenalised(folder, methods, runs, tag, scale, len(perturbs),start=start,parameter="Pepsilon")
