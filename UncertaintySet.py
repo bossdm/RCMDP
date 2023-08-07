@@ -97,11 +97,11 @@ class BaseUncertaintySet(object):
 
 class HoeffdingSet(BaseUncertaintySet):
 
-    def __init__(self,critic_type,delta, states,actions, next_states,D_S, D_A,D_C,centroids=None,use_offset=False,writefile=None):
+    def __init__(self,critic_type,CI, states,actions, next_states,D_S, D_A,D_C,centroids=None,use_offset=False,writefile=None):
         BaseUncertaintySet.__init__(self,states,actions,next_states,centroids,use_offset,writefile)
         self.critic = True
         self.adversarial = False
-        self.delta = delta # desired confidence level
+        self.delta = 1 - CI # set delta according to desired confidence level
         self.alpha=np.zeros((self.S,self.A))
         self.D_S = D_S
         self.D_A = D_A
@@ -307,10 +307,10 @@ class AdversarialHoeffdingSet(BaseUncertaintySet):
     uncertainty set based on Hoeffding; adds adversarial agent to solve the inner problem approximately
     """
 
-    def __init__(self,delta, states,actions, next_states,D_S, D_A, optimiser_theta,optimiser_lbda,centroids=None,
+    def __init__(self,CI, states,actions, next_states,D_S, D_A, optimiser_theta,optimiser_lbda,centroids=None,
                  use_offset=False, writefile=None,min_count=50):
         BaseUncertaintySet.__init__(self,states,actions,next_states,centroids,use_offset)
-        self.delta = delta # desired confidence level
+        self.delta = 1 - CI # set delta according to desired confidence level
         self.alpha=np.zeros((self.S,self.A))
         self.D_S = D_S
         self.D_A = D_A

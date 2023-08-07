@@ -104,7 +104,7 @@ def table_test_overshoot(folder,methods,runs,d,tag,N_perturbs,start,parameter): 
             data = get_data_from_file(folder + method + "/run" + str(run) + "/real_cmdp_log.txt", columns=[1], lines=range(start,end))
             data = [dat[0] for dat in data]  # flatten the list of lists
             means.append(np.mean(data))
-            F_alpha, CVaR = get_CVaR(alpha=0.10,data=data,reverse=False)
+            F_alpha, CVaR = get_CVaR(alpha=0.10,data=data,reverse=True)
             F_alphas.append(F_alpha)
             CVaRs.append(CVaR)
         np.stack(means)
@@ -150,11 +150,12 @@ def table_test_value(folder,methods,runs,tag,N_perturbs,start,parameter): # data
 
 def table_test_Rpenalised(folder,methods,runs,tag,scale,N_perturbs,start,parameter):
     file = open("test_Rpenalised_" + tag + parameter + ".txt", "w")
-    file.write(r"& $R_{pen}$")
+    file.write(r"& $R_{pen}$ (signed) & $R_{pen}$ (positive)")
     file.write("\n")
     for i, method in enumerate(methods):
         values=[]
         overshoots=[]
+        absolute_overshoots=[]
         end = -N_perturbs * test_its
         for run in runs:
             data = get_data_from_file(folder + method + "/run" + str(run) +  "/real_cmdp_log.txt", columns=[0,1],
@@ -163,12 +164,17 @@ def table_test_Rpenalised(folder,methods,runs,tag,scale,N_perturbs,start,paramet
             overshoot = np.mean([dat[1] for dat in data]) - d  # flatten the list of lists
             values.append(value)
             overshoots.append(overshoot)
+            absolute_overshoots.append(max(0, overshoot))
+
         Rpen = np.array(values) - scale*np.array(overshoots)
         m = np.mean(Rpen)
         s = np.std(Rpen) / np.sqrt(len(runs))
+        Rpen2 = np.array(values) - scale * np.array(absolute_overshoots)
+        m2 = np.mean(Rpen2)
+        s2 = np.std(Rpen2) / np.sqrt(len(runs))
 
         file.write(labels[i] + " ")
-        file.write(r"& $ %.1f \pm %.1f$ " % (m,s))
+        file.write(r"& $ %.1f \pm %.1f$ & $ %.1f \pm %.1f$" % (m, s, m2, s2))
         file.write("\n")
 
 def plot_test_overshoot_by_perturbation(folder,methods,labels,runs,d,begin,perturbs,test_its,tag,parameter="Parameter"): # data comes from last N_test*test_its data points in the real_cmdp_log.txt
@@ -256,9 +262,9 @@ if __name__ == "__main__":
                                     tag=tag,parameter=r"$P_{success}$")
     plot_test_overshoot_by_perturbation(folder=folder, methods=methods, labels=labels,runs=runs,d=d,
                                     perturbs=perturbs, begin=start,test_its=test_its,tag=tag,parameter=r"$P_{success}$")
-    V_max = 200
-    C_max = 200
-    scale = V_max/C_max
+    # V_max = 200
+    # C_max = 200
+    scale = 500 # just take the maximal lagrangian multiplier
     table_test_Rpenalised(folder, methods, runs, tag, scale, len(perturbs),start=-500,parameter="Psuccess")
 
     # test delta
@@ -273,7 +279,7 @@ if __name__ == "__main__":
                                          perturbs=perturbs, begin=start, test_its=test_its, tag=tag, parameter=r"$P_{\delta}$")
     table_test_value(folder=folder,methods=methods,runs=runs,tag=tag,N_perturbs=len(perturbs),start=start,parameter="Pdelta")
     table_test_overshoot(folder=folder, methods=methods, runs=runs,d=d,tag=tag,N_perturbs=len(perturbs),start=start,parameter="Pdelta")
-    V_max = 200
-    C_max = 200
-    scale = V_max / C_max
+    # V_max = 200
+    # C_max = 200
+    scale = 500 #
     table_test_Rpenalised(folder, methods, runs, tag, scale, len(perturbs),start=start,parameter="Psuccess")
