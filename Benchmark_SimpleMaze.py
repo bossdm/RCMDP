@@ -25,7 +25,7 @@ if __name__ == "__main__":
     np.random.seed(args.run)
     args.folder+="/run"+str(args.run)
     #d=200   --> budget way too big so solution has C(theta) - d < 0 (inactive constraint) --> see that lbda converges to 0
-    d=[3.5]
+    d=[3.0]
     T=200
     D_S=2  #(x,y) coordinates
     D_A=4
@@ -53,7 +53,7 @@ if __name__ == "__main__":
         if (xx,yy) in costly_cells:
             return np.array([1.0], dtype=float)
         elif (xx,yy) in very_costly_cells:
-            return np.array([4.0], dtype=float)
+            return np.array([10.0], dtype=float)
         else:
             return np.array([0.0],dtype=float)  # go vertical first rather than horizontal first
 
@@ -79,7 +79,7 @@ if __name__ == "__main__":
         print("created new folder ",args.folder)
 
     realcmdp_logfile = open(args.folder + "/real_cmdp_log.txt", "w")
-    real_cmdp = CMDP(p_0,r_real,c_real,P_real(0.80),states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile)
+    real_cmdp = CMDP(p_0,r_real,c_real,P_real(1.0),states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile)
     tests=[]
     for prob in [0.6,0.7,0.8,0.9,1.0]:
         tests.append(CMDP(p_0,r_real,c_real,P_real(prob),states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile))
