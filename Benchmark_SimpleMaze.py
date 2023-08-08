@@ -25,7 +25,7 @@ if __name__ == "__main__":
     np.random.seed(args.run)
     args.folder+="/run"+str(args.run)
     #d=200   --> budget way too big so solution has C(theta) - d < 0 (inactive constraint) --> see that lbda converges to 0
-    d=[4.0]
+    d=[2.0]
     T=200
     D_S=2  #(x,y) coordinates
     D_A=4
@@ -44,12 +44,18 @@ if __name__ == "__main__":
         return -1.0  # go to the goal location as quickly as possible (-8 is optimal)
 
     costly_cells = [(1,y) for y in range(4)] + [(3,2),(3,3),(3,4)]
+    very_costly_cells = [((3,0),(4,0))]
 
     def c_real(s_next):  # try to reach the
         x, y = s_next
         xx = np.clip(x ,0,4)
         yy = np.clip(y,0,4)
-        return np.array([1.0],dtype=float) if (xx,yy) in costly_cells else np.array([0.0],dtype=float)  # go vertical first rather than horizontal first
+        if (xx,yy) in costly_cells:
+            return np.array([1.0], dtype=float)
+        elif (xx,yy) in very_costly_cells:
+            return np.array([3.0], dtype=float)
+        else:
+            return np.array([0.0],dtype=float)  # go vertical first rather than horizontal first
 
     def P_real(successprob,delta=None):
         def P(s,a):
