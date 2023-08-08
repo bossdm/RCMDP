@@ -69,8 +69,7 @@ if __name__ == "__main__":
                     dy = 0
                 else:
                     s_idx = states.index(s)
-                    a_idx = actions.index(a)
-                    dx, dy = delta[s_idx,a_idx]
+                    dx, dy = delta[s_idx]
                 s_next = [np.clip(x+dx, 0, 4), np.clip(y+dy,0,4)]
             return s_next
         return P
@@ -131,18 +130,18 @@ if __name__ == "__main__":
     # random perturb test stochastic: fixed random action rather than variable
     np.random.seed(args.run)
     perturb_tests = []
-    distortions = [5,10,20,50,100]
+    distortions = [5,10,15,20,25] # selected states to be distorted
     state_actions=[(s,a) for s,state in enumerate(states) for a,action in enumerate(actions)]
     for N in distortions:
         # distort with low probability (don't want to change every state-action pair, that would be too severe)
         for it in range(test_its):
-            idx=np.random.choice(range(len(state_actions)), (N,), replace=False)
-            delta=np.zeros((len(states),len(actions),2))
-            for id in idx:
-                s,a = state_actions[id]
-                idx = np.random.choice(range(len(next_states)))
-                a_r = next_states[idx]
-                delta[s,a] = a_r
+            ids=np.random.choice(range(len(states)), (N,), replace=False)
+            delta=np.zeros((len(states),2))
+            for id in ids:
+                s = states[id]
+                idx = np.random.choice(range(len(actions)))
+                a_r = actions[idx]
+                delta[s] = a_r
             perturb_tests.append(CMDP(p_0,r_real,c_real, P_real(0.80,delta),states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile))
     for t in perturb_tests:
         method.real_CMDP = t
