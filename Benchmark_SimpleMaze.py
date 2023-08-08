@@ -59,14 +59,13 @@ if __name__ == "__main__":
                 s_next = [np.clip(x + a[0], 0, 4), np.clip(y + a[1],0,4)]
             else:
                 if delta is None:
-                    idx = np.random.choice(range(len(next_states)))
-                    a_r = next_states[idx]
-                    s_next = [np.clip(x + a_r[0], 0, 4), np.clip(y + a_r[1], 0, 4)]
+                    dx = 0
+                    dy = 0
                 else:
                     s_idx = states.index(s)
                     a_idx = actions.index(a)
                     dx, dy = delta[s_idx,a_idx]
-                    s_next = [np.clip(x+dx, 0, 4), np.clip(y+dy,0,4)]
+                s_next = [np.clip(x+dx, 0, 4), np.clip(y+dy,0,4)]
             return s_next
         return P
     gamma=0.99
