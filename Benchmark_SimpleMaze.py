@@ -129,19 +129,40 @@ if __name__ == "__main__":
 
     # random perturb test stochastic: fixed random action rather than variable
     np.random.seed(args.run)
+    def worst_case_delta(x,y):
+        if y == 0:
+            if x < 3:
+                ar = (1, 0)  # go towards bottom verycostlycells
+            else: # stay on the verycostlycells
+                ar = (0,0)
+        elif y == 1:  # go down, closer to the bottom verycostlycells
+            ar = (0, -1)
+        elif y == 2:
+            ar = (-1, 0)  # go backwards
+        elif y == 3:
+            if x < 2:  # go up; hitting the top verycostlycells
+                ar = (0,1)
+            else: # go back, closer to the top verycostlycells
+                ar = (-1,0)
+        elif y == 4:
+            if x < 2:  # stay on verycostlycells
+                ar = (0,0)
+            else: # go back, closer to the top verycostlycells
+                ar = (-1,0)
+        else:
+            raise Exception("y cannot be "+str(y))
+        return ar
     perturb_tests = []
-    distortions = [5,10,15,20,25] # selected states to be distorted
+    distortions = [5,10,15,20,25] # selected states to be distorted (note: only happens 20% of the time with successprob 0.80)
     state_actions=[(s,a) for s,state in enumerate(states) for a,action in enumerate(actions)]
     for N in distortions:
-        # distort with low probability (don't want to change every state-action pair, that would be too severe)
         for it in range(test_its):
             ids=np.random.choice(range(len(states)), (N,), replace=False)
             delta=np.zeros((len(states),2))
             for id in ids:
-                s = states[id]
-                idx = np.random.choice(range(len(actions)))
-                a_r = actions[idx]
-                delta[s] = a_r
+                x,y = states[id]
+                a_r = worst_case_delta(x,y)
+                delta[id] = a_r
             perturb_tests.append(CMDP(p_0,r_real,c_real, P_real(0.80,delta),states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile))
     for t in perturb_tests:
         method.real_CMDP = t
