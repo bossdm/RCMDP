@@ -163,7 +163,7 @@ if __name__ == "__main__":
                 x,y = states[id]
                 a_r = worst_case_delta(x,y)
                 delta[id] = a_r
-            perturb_tests.append(CMDP(p_0,r_real,c_real, P_real(0.80,delta),states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile))
+            perturb_tests.append(CMDP(p_0,r_real,c_real, P_real(0.5,delta),states,actions,next_states,gamma,T,d,terminals,realcmdp_logfile))
     for t in perturb_tests:
         method.real_CMDP = t
         method.test(False)
