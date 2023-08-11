@@ -49,7 +49,7 @@ class RCPG(object):
         self.simlogfile=simlogfile
         self.gamma = self.real_CMDP.gamma
         self.d = self.real_CMDP.d
-        lbda=np.zeros(len(self.d)) + np.log(50.0)
+        lbda=np.zeros(len(self.d)) + np.log(1.0)
         self.lbda = tf.Variable(lbda,dtype=np.float64)
         self.entropy_reg_constant = 5.0# by default, can override it
 

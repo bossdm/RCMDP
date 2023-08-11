@@ -25,8 +25,8 @@ if __name__ == "__main__":
     np.random.seed(args.run)
     args.folder+="/run"+str(args.run)
     #d=200   --> budget way too big so solution has C(theta) - d < 0 (inactive constraint) --> see that lbda converges to 0
-    d=[3.0]
-    T=200
+    d=[0.4]
+    T=100
     D_S=2  #(x,y) coordinates
     D_A=4
     D_C=len(d)
@@ -38,24 +38,26 @@ if __name__ == "__main__":
     initial_states=[[0,0]]
     p_0 = InitialDiscreteState(initial_states,probs=[1.])
     terminals=[[4,4]]
-    def r_real(s_next):    # try to reach the
+    def r_real(s_next, s):    # try to reach the
         #x,y = s_next
         #s_next = [np.clip(x,0,4),np.clip(y,0,4)]
+        #added = -0.10 if s == s_next else 0.0
         return -1.0  # go to the goal location as quickly as possible (-8 is optimal)
 
-    costly_cells = [(1,y) for y in range(3)] + [(3,2),(3,3),(3,4)]
+    costly_cells = [(1,y) for y in range(3)] + [(2,2),(3,2),(3,3),(3,4)]
     very_costly_cells = [(0,4),(1,4),(3,0),(4,0)]
-
-    def c_real(s_next):  # try to reach the
+    
+    def c_real(s_next,s):  # try to reach the
         x, y = s_next
         xx = np.clip(x ,0,4)
         yy = np.clip(y,0,4)
+        #added = 0.02 if s == s_next else 0.0
         if (xx,yy) in costly_cells:
-            return np.array([1.0], dtype=float)
+            return np.array([0.1], dtype=float)
         elif (xx,yy) in very_costly_cells:
-            return np.array([10.0], dtype=float)
+            return np.array([1.0], dtype=float)
         else:
-            return np.array([0.0],dtype=float)  # go vertical first rather than horizontal first
+            return np.array([0.0],dtype=float) 
 
     def P_real(successprob,delta=None):
         def P(s,a):
@@ -153,8 +155,8 @@ if __name__ == "__main__":
             raise Exception("y cannot be "+str(y))
         return ar
     perturb_tests = []
-    distortions = [5,10,15,20,25] # selected states to be distorted (note: only happens 20% of the time with successprob 0.80)
-    state_actions=[(s,a) for s,state in enumerate(states) for a,action in enumerate(actions)]
+    distortions = [5,10,15,20,25] # selected non-safe states to be distorted
+    #state_actions=[(s,a) for s,state in enumerate(states) for a,action in enumerate(actions)]
     for N in distortions:
         for it in range(test_its):
             ids=np.random.choice(range(len(states)), (N,), replace=False)
@@ -170,7 +172,7 @@ if __name__ == "__main__":
     test_values=[]
     test_constraints=[]
     lines = list(csv.reader(open(args.folder + "/real_cmdp_log.txt", 'r'), delimiter='\t'))
-    for line in lines[-len(tests)*test_its:]:
+    for line in lines[-len(perturb_tests):]:
         x,y=line
         test_values.append(float(x))
         test_constraints.append(float(y))
@@ -184,7 +186,7 @@ if __name__ == "__main__":
     test_values=[]
     test_constraints=[]
     lines = list(csv.reader(open(args.folder + "/real_cmdp_log.txt", 'r'), delimiter='\t'))
-    for line in lines[-len(tests)*test_its:]:
+    for line in lines[-len(perturb_tests):]:
         x,y=line
         test_values.append(float(x))
         test_constraints.append(float(y))

@@ -317,7 +317,7 @@ class AdversarialHoeffdingSet(BaseUncertaintySet):
         self.pi = StochasticPol(self.D_S+1,self.NS) # +1 is for actions; S is output as we want output probs for each state
         self.optimiser_theta = optimiser_theta
         self.optimiser_lbda  = optimiser_lbda
-        self.lbda = tf.Variable(np.log(50.0),dtype=np.float64)  # norm constraint is always active
+        self.lbda = tf.Variable(np.log(1.0),dtype=np.float64)  # norm constraint is always active
         self.writefile=writefile
         self.U_updates=0
         self.adversarial = True

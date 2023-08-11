@@ -51,9 +51,9 @@ class CMDP(BaseCMDP):
         else:
             a_index, grad,probs = pi.select_action(s,deterministic=test)
         a = self.actions[a_index]
-        s_next = self.P(s, a)
-        c = self.c(s_next)
-        r = self.r(s_next)
+        s_next  = self.P(s, a)
+        c = self.c(s_next, s)
+        r = self.r(s_next, s)
         #print("s_next ",s_next)
         return (s, a_index, r, c, s_next,grad,probs,None,None)
 
@@ -76,6 +76,6 @@ class RobustCMDP(CMDP):
         s_next, grad_adv, probs_adv = self.uncertainty_set.random_state(s_index, a_index)
         if self.uncertainty_set.use_offset:
             s_next = [np.clip(s_next[i] + s[i],self.uncertainty_set.s_min[i],self.uncertainty_set.s_max[i]) for i in range(len(s_next))]
-        c = self.c(s_next)
-        r = self.r(s_next)
+        c = self.c(s_next,s)
+        r = self.r(s_next,s)
         return (s, a_index, r, c, s_next, grad, probs, grad_adv, probs_adv)
