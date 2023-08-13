@@ -238,48 +238,58 @@ def plot_test_value_by_perturbation(folder,methods,labels,runs,perturbs,test_its
     plt.savefig("test_value_by_perturbation_"+tag+parameter+".pdf")
 
 if __name__ == "__main__":
-    labels = ["Adversarial RCPG","RCPG (Robust Value)", "RCPG (Robust Constraint)","CPG", "PG"]
-    runs=range(1,31)
-    perturbs=[0.6,0.7,0.8,0.9,1.0]
+    labels = ["Adversarial RCPG","RCPG (Robust value)","RCPG (Robust constraint)","RCPG (Robust Lagrangian)","CPG","PG"]
+    methods = ["AdversarialRCPG_Hoeffding", "RCPG_Hoeffding_V", "RCPG_Hoeffding_C", "RCPG_Hoeffding_L", "CPG", "PG"]
+    runs=range(1,21)
+
     test_its=50
     sim_its=5000
     snaps=20
     gamma = 0.99
-    H=gamma/(1-gamma)
-    factor = H / 200.
-    d=4 / factor
-    tag="FINAL"
-    folder="ResultsFinal100CI90/"
-    methods=["AdversarialRCPG_Hoeffding","RCPG_Hoeffding_V","RCPG_Hoeffding_C","CPG","PG"]#"RCPG_Hoeffding_L","CPG","PG"]
-    start=-1250
-    plot_sim_overshoot_development(folder=folder,methods=methods,labels=labels,runs=runs,d=d,its=sim_its,snaps=20,tag=tag)
-    plot_sim_value_development(folder=folder, methods=methods,labels=labels, runs=runs,its=sim_its,snaps=20,tag=tag)
-    table_test_value(folder=folder,methods=methods,runs=runs,tag=tag,N_perturbs=len(perturbs),start = start, parameter="Psuccess")  # take the stochastic runs rather than deterministic runs)
-    table_test_overshoot(folder=folder, methods=methods, runs=runs,d=d,tag=tag,N_perturbs=len(perturbs),start = start, parameter="Psuccess")
-    # test Psuccess
-    perturbs = [0.6,0.7,0.8,0.9,1.0]
-    plot_test_value_by_perturbation(folder=folder,methods=methods,labels=labels,runs=runs,perturbs=perturbs, begin=start,test_its=test_its,
-                                    tag=tag,parameter=r"$P_{success}$")
-    plot_test_overshoot_by_perturbation(folder=folder, methods=methods, labels=labels,runs=runs,d=d,
-                                    perturbs=perturbs, begin=start,test_its=test_its,tag=tag,parameter=r"$P_{success}$")
-    # V_max = 200
-    # C_max = 200
-    scale = 500 # just take the maximal lagrangian multiplier
-    table_test_Rpenalised(folder, methods, runs, tag, scale, len(perturbs),start=start,parameter="Psuccess")
 
-    # test delta
-    perturbs = [0.05,0.10,0.25,0.50,1.0] # 100 state-action pairs (25 * 4), and N in {5,10,25,50,100}
-    test_its = 50
-    start = -500
+    task = "Task2"
+    if task == "Task1":
+        folder = "SafeNavigation1Results/"
+        tag = "SafeNavigation1"
+        # n=100
+        d = 3.0
+        perturbs = [5, 10, 20, 50, 100]  # 100 state-action pairs (25 * 4), and N in {5,10,20,50,100}
+    elif task == "Task2":
+        folder = "SafeNavigation2Results/"
+        tag = "SafeNavigation2"
+        d = 0.4
+        # n= 10000
+        perturbs = [5, 10, 15, 20, 25]  # 25 states
+    # development plots
+    plot_sim_overshoot_development(folder=folder, methods=methods, labels=labels, runs=runs, d=d, its=sim_its, snaps=20,
+                                   tag=tag)
+    plot_sim_value_development(folder=folder, methods=methods, labels=labels, runs=runs, its=sim_its, snaps=20,
+                               tag=tag)
+    for type in ["stoch","determ"]:
+        ttag = tag+"_"+type
+        start=-1250 if type == "stoch" else -1000
+        # test Psuccess
+        perturbs = [0.6, 0.7, 0.8, 0.9, 1.0]
+        table_test_value(folder=folder,methods=methods,runs=runs,tag=ttag,N_perturbs=len(perturbs),start = start, parameter="Psuccess")
+        table_test_overshoot(folder=folder, methods=methods, runs=runs,d=d,tag=ttag,N_perturbs=len(perturbs),start = start, parameter="Psuccess")
 
-    plot_test_value_by_perturbation(folder=folder, methods=methods, labels=labels, runs=runs, perturbs=perturbs,begin=start,
-                                    test_its=test_its,
-                                    tag=tag, parameter=r"$P_{\epsilon}$")
-    plot_test_overshoot_by_perturbation(folder=folder, methods=methods, labels=labels, runs=runs, d=d,
-                                         perturbs=perturbs, begin=start, test_its=test_its, tag=tag, parameter=r"$P_{\epsilon}$")
-    table_test_value(folder=folder,methods=methods,runs=runs,tag=tag,N_perturbs=len(perturbs),start=start,parameter="Pepsilon")
-    table_test_overshoot(folder=folder, methods=methods, runs=runs,d=d,tag=tag,N_perturbs=len(perturbs),start=start,parameter="Pepsilon")
-    # V_max = 200
-    # C_max = 200
-    scale = 500 #
-    table_test_Rpenalised(folder, methods, runs, tag, scale, len(perturbs),start=start,parameter="Pepsilon")
+        plot_test_value_by_perturbation(folder=folder,methods=methods,labels=labels,runs=runs,perturbs=perturbs, begin=start,test_its=test_its,
+                                        tag=ttag,parameter=r"$P_{success}$")
+        plot_test_overshoot_by_perturbation(folder=folder, methods=methods, labels=labels,runs=runs,d=d,
+                                            perturbs=perturbs, begin=start,test_its=test_its,tag=ttag,parameter=r"$P_{success}$")
+        scale = 500 # the maximal lagrangian multiplier
+        table_test_Rpenalised(folder, methods, runs, ttag, scale, len(perturbs),start=start,parameter="Psuccess")
+
+        # test epsilon
+        test_its = 50
+        start =-500 if type == "stoch" else -250
+
+        plot_test_value_by_perturbation(folder=folder, methods=methods, labels=labels, runs=runs, perturbs=perturbs,begin=start,
+                                        test_its=test_its,
+                                        tag=ttag, parameter=r"$P_{\epsilon}$")
+        plot_test_overshoot_by_perturbation(folder=folder, methods=methods, labels=labels, runs=runs, d=d,
+                                            perturbs=perturbs, begin=start, test_its=test_its, tag=ttag, parameter=r"$N_{\epsilon}$")
+        table_test_value(folder=folder,methods=methods,runs=runs,tag=ttag,N_perturbs=len(perturbs),start=start,parameter="Nepsilon")
+        table_test_overshoot(folder=folder, methods=methods, runs=runs,d=d,tag=ttag,N_perturbs=len(perturbs),start=start,parameter="Nepsilon")
+        scale = 500
+        table_test_Rpenalised(folder, methods, runs, ttag, scale, len(perturbs),start=start,parameter="Nepsilon")
