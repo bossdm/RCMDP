@@ -199,7 +199,7 @@ def plot_test_overshoot_by_perturbation(folder,methods,labels,runs,d,begin,pertu
             m = np.mean(plotline) - d
             s = np.std(plotline)/np.sqrt(len(runs))
             ms.append(m)
-            stds.append(s/len(runs))
+            stds.append(s)
             start += test_its
         x = perturbs
         ms=np.array(ms)
@@ -251,7 +251,7 @@ if __name__ == "__main__":
     snaps=20
     gamma = 0.99
     Psuccess_perturbs=perturbs = [0.6, 0.7, 0.8, 0.9, 1.0]
-    task = "Task2"
+    task = "Task1"
     if task == "Task1":
         folder = "SafeNavigation1Results/"
         tag = "SafeNavigation1"
