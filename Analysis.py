@@ -263,7 +263,7 @@ if __name__ == "__main__":
     elif task == "Task2":
         folder = "SafeNavigation2Results/"
         tag = "SafeNavigation2"
-        H = 50
+        H = 100
         factor = H / sum([gamma ** i for i in range(H)])
         d = 0.4 * factor # /sum([gamma**i for i in range(50)])
         # n= 10000
