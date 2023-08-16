@@ -2,7 +2,7 @@
 import numpy as np
 from RCMDP.Utils import check_folder
 PRINTING=False
-def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,folder):
+def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,folder,deterministic):
     if env.stage == "data":
         # update the agent uncertainty set
         agent.uncertainty_set.add_visits(agent.buffer)
@@ -32,7 +32,8 @@ def after_episode(env,agent,step,actionProbsList,saving_frequency,episodeCount,f
         if PRINTING:
             print("continue testing ")
         check_folder(folder + "/performance/")
-        writefile = open(folder + "/performance/" + env.stage + ".txt", "a")
+        stochstring= "_determ" if deterministic else "_stoch"
+        writefile = open(folder + "/performance/" + env.stage + stochstring + ".txt", "a")
         writefile.write("%.4f " % (env.episodeScore,))
         for j in range(len(env.d)):
             writefile.write("\t %.4f" % (env.episodeConstraint[j],))
@@ -52,7 +53,7 @@ def after_loop(env,agent,folder,episodeCount,solved):
     print("avg score ", np.mean(env.episodeScoreList))
     print("avg constraint ", np.mean(env.episodeConstraintList))
 
-def agent_env_loop(env,agent,args,episodeCount,episodeLimit,using_nextstate=False):
+def agent_env_loop(env,agent,args,episodeCount,episodeLimit,using_nextstate=False,deterministic=False):
 
     env.uncertainty_set = agent.uncertainty_set
     #env.uncertainty_set.centroids = env.states
@@ -69,7 +70,7 @@ def agent_env_loop(env,agent,args,episodeCount,episodeLimit,using_nextstate=Fals
         # Inner loop is the episode loop
         for step in range(env.stepsPerEpisode):
             # # In training mode the agent samples from the probability distribution, naturally implementing exploration
-            a, grad, actionProbs = agent.work(s, test=False,random=env.stage == "data")
+            a, grad, actionProbs = agent.work(s, test=deterministic,random=env.stage == "data")
             env.next_state, env.grad_adv, env.probs_adv = agent.random_state(env.s_index, a)
             s_next, r, c, done, info = env.step([a],repeat_steps=1)
             if using_nextstate:
@@ -92,7 +93,7 @@ def agent_env_loop(env,agent,args,episodeCount,episodeLimit,using_nextstate=Fals
         # The average action probability tells us how confident the agent was of its actions.
         # By looking at this we can check whether the agent is converging to a certain policy.
 
-        after_episode(env, agent, step, actionProbsList, saving_frequency, episodeCount, args.folder)
+        after_episode(env, agent, step, actionProbsList, saving_frequency, episodeCount, args.folder,deterministic)
         episodeCount += 1  # Increment episode counter
 
     after_loop(env,agent,args.folder,episodeCount,solved)
