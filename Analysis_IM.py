@@ -40,11 +40,11 @@ def get_data_from_file(filename,columns,lines=None,linesExclude=None):
         data.append([float(r[c]) for c in columns])
     return data
 
-def plot_sim_overshoot_development(folder,methods,labels,runs,d,its,snaps,tag): # data comes from simcmdp_log.txt
-    fig, ax = plt.subplots()
+def plot_sim_overshoot_development(folder,methods,labels,markers,runs,d,its,snaps,tag): # data comes from simcmdp_log.txt
+    fig, ax = plt.subplots(figsize=(10,10))
     step = its//snaps
     plots = []
-    for method in methods:
+    for i,method in enumerate(methods):
         plotline=[]
         for run in runs:
             data = get_data_from_file(folder+method+"/run"+str(run)+"/performance/train.txt",columns=[1],lines=None,linesExclude=None)
@@ -55,18 +55,20 @@ def plot_sim_overshoot_development(folder,methods,labels,runs,d,its,snaps,tag): 
         m = np.mean(plotline,axis=0) - d
         s = np.std(plotline,axis=0)/np.sqrt(len(runs))
         x=np.array(list(range(0,its+step,step)))
-        plots.append(ax.plot(x,m)[0])
+        plots.append(ax.plot(x,m,marker=markers[i],linewidth=3.0,markersize=20)[0])
         ax.fill_between(x, m-s,m+s,alpha=0.25)
-    ax.set_xlabel('Episodes')
-    ax.set_ylabel('Overshoot')
-    ax.legend(plots,labels,loc='upper right')
+    ax.tick_params(axis='both', which='major', labelsize=20)
+    ax.set_xlabel('Episodes',fontsize=30)
+    ax.set_ylabel('Overshoot',fontsize=30)
+    plt.tight_layout()
+    #ax.legend(plots,labels,loc='upper right')
     plt.savefig("sim_overshoot_development_"+tag+".pdf")
 
-def plot_sim_value_development(folder,methods,labels,runs,its,snaps,tag): # data comes from simcmdp_log.txt
-    fig, ax = plt.subplots()
+def plot_sim_value_development(folder,methods,labels,markers,runs,its,snaps,tag): # data comes from simcmdp_log.txt
+    fig, ax = plt.subplots(figsize=(10,10))
     step = its // snaps
     plots = []
-    for method in methods:
+    for i, method in enumerate(methods):
         plotline=[]
         for run in runs:
             data = get_data_from_file(folder+method+"/run"+str(run)+"/performance/train.txt",columns=[0],lines=None,linesExclude=None)
@@ -76,11 +78,13 @@ def plot_sim_value_development(folder,methods,labels,runs,its,snaps,tag): # data
         m = np.mean(plotline,axis=0)
         s = np.std(plotline,axis=0)/np.sqrt(len(runs))
         x=np.array(list(range(0,its+step,step)))
-        plots.append(ax.plot(x,m)[0])
+        plots.append(ax.plot(x,m,marker=markers[i],linewidth=3.0,markersize=20)[0])
         ax.fill_between(x, m-s,m+s,alpha=0.25)
-    ax.set_xlabel('Episodes')
-    ax.set_ylabel('Value')
-    ax.legend(plots,labels,loc='upper right')
+    ax.tick_params(axis='both', which='major', labelsize=20)
+    ax.set_xlabel('Episodes',fontsize=30)
+    ax.set_ylabel('Value',fontsize=30)
+    plt.tight_layout()
+    #ax.legend(plots,labels,loc='upper right')
     plt.savefig("sim_value_development_"+tag+".pdf")
 
 def table_test_overshoot(folder,methods,runs,d,tag,stochstring): # data comes from test_performance_stochastic.txt
@@ -165,14 +169,14 @@ def table_test_Rpenalised(folder,methods,runs,tag,scale,stochstring):
     file.write("\n")
 
 
-def plot_test_overshoot_by_perturbation(folder,methods,labels,runs,d,perturbs,test_its,tag,stochstring): # data comes from last N_test*test_its data points in the real_cmdp_log.txt
-    fig, ax = plt.subplots(figsize=(9.5, 10.5))
+def plot_test_overshoot_by_perturbation(folder,methods,labels, markers,runs,d,perturbs,test_its,tag,stochstring): # data comes from last N_test*test_its data points in the real_cmdp_log.txt
+    fig, ax = plt.subplots(figsize=(10,10))
     N_perturbs=len(perturbs)
     # for tests manipulate μ ∈ {S/6, S/4, S/3} and σ ∈ {S/8, S/6, S/4}
     xticklabels = ["("+mu_factor+","+sigma_factor+")" for mu_factor in [r"$\mu=S/6$",r"$\mu=S/4$",r"$\mu=S/3$"]
         for sigma_factor in [r"$\sigma=S/8$",r"$\sigma=S/6$",r"$\sigma=S/4$"]]
     plots = []
-    for method in methods:
+    for i,method in enumerate(methods):
         ms=[]
         stds=[]
         start = -N_perturbs*test_its
@@ -191,22 +195,24 @@ def plot_test_overshoot_by_perturbation(folder,methods,labels,runs,d,perturbs,te
         x = perturbs
         ms=np.array(ms)
         stds=np.array(stds)
-        plots.append(ax.plot(x, ms)[0])
+        plots.append(ax.plot(x, ms,marker=markers[i],linewidth=3.0,markersize=20)[0])
         ax.fill_between(x, ms - stds, ms + stds,alpha=0.25)
     plt.xticks(list(range(N_perturbs)),xticklabels,
            rotation=20)
-    ax.set_xlabel('Demand distribution')
-    ax.set_ylabel('Overshoot')
-    ax.legend(plots,labels)
+    ax.tick_params(axis='both', which='major', labelsize=20)
+    ax.set_xlabel('Demand distribution',fontsize=30)
+    ax.set_ylabel('Overshoot',fontsize=30)
+    plt.tight_layout()
+    #ax.legend(plots,labels)
     plt.savefig("test_overshoot_by_perturbation_"+tag+".pdf")
 
-def plot_test_value_by_perturbation(folder,methods,labels,runs,perturbs,test_its,tag,stochstring): # data comes from last N_test*test_its data points in the real_cmdp_log.txt
-    fig, ax = plt.subplots(figsize=(9.5,10.5))
+def plot_test_value_by_perturbation(folder,methods,labels, markers,runs,perturbs,test_its,tag,stochstring): # data comes from last N_test*test_its data points in the real_cmdp_log.txt
+    fig, ax = plt.subplots(figsize=(10,10))
     N_perturbs=len(perturbs)
     xticklabels = [mu_factor+","+sigma_factor for mu_factor in [r"$\mu=S/6$",r"$\mu=S/4$",r"$\mu=S/3$"]
         for sigma_factor in [r"$\sigma=S/8$",r"$\sigma=S/6$",r"$\sigma=S/4$"]]
     plots=[]
-    for method in methods:
+    for i,method in enumerate(methods):
         ms=[]
         stds=[]
         start = -N_perturbs*test_its
@@ -225,17 +231,29 @@ def plot_test_value_by_perturbation(folder,methods,labels,runs,perturbs,test_its
         x = perturbs
         ms=np.array(ms)
         stds=np.array(stds)
-        plots.append(ax.plot(x, ms)[0])
+        plots.append(ax.plot(x, ms,label=labels[i],marker=markers[i],linewidth=3.0,markersize=20)[0])
         ax.fill_between(x, ms - stds, ms + stds,alpha=0.25)
     plt.xticks(list(range(N_perturbs)),xticklabels,
            rotation=20)
-    ax.set_xlabel('Demand distribution')
-    ax.set_ylabel('Value')
-    ax.legend(plots,labels)
+    ax.tick_params(axis='both', which='major', labelsize=20)
+    ax.set_xlabel('Demand distribution',fontsize=30)
+    ax.set_ylabel('Value',fontsize=30)
+    plt.tight_layout()
     plt.savefig("test_value_by_perturbation_"+tag+".pdf")
+
+    figsize = (20,5.0)
+    fig_leg = plt.figure(figsize=figsize)
+    ax_leg = fig_leg.add_subplot(111)
+    # add the legend from the previous axes
+    ax_leg.legend(*ax.get_legend_handles_labels(), loc='center',ncol=len(labels)//2,fontsize=32)
+    # hide the axes frame and the x/y labels
+    ax_leg.axis('off')
+    fig_leg.savefig('legend.pdf')
+
 
 if __name__ == "__main__":
     labels = ["Adversarial RCPG","RCPG (Robust Lagrangian)","RCPG (Robust value)","RCPG (Robust constraint)","CPG","PG"] # "RCPG (Robust Lagrangian)",
+    markers=["D","^","o","x","+","s"]
     runs=range(1,21) #+ range(12,21)
     perturbs=[1,2,3,4,5,6,7,8,9]
     test_its=50
@@ -244,21 +262,21 @@ if __name__ == "__main__":
     gamma=0.99
     H = 100
     factor = H/sum([gamma**i for i in range(H)])
-    d=10.0*factor
+    d=6.0*factor
     tag="IM"
     folder="IM_Results/"
     methods=["AdversarialRCPG_Hoeffding","RCPG_Hoeffding_L","RCPG_Hoeffding_V","RCPG_Hoeffding_C","CPG","PG"] # "RCPG_Hoeffding_L",
 
-    plot_sim_overshoot_development(folder=folder,methods=methods,labels=labels,runs=runs,d=d,its=sim_its,snaps=20,tag=tag)
-    plot_sim_value_development(folder=folder, methods=methods,labels=labels, runs=runs,its=sim_its,snaps=20,tag=tag)
+    plot_sim_overshoot_development(folder=folder,methods=methods,labels=labels,markers=markers,runs=runs,d=d,its=sim_its,snaps=20,tag=tag)
+    plot_sim_value_development(folder=folder, methods=methods,labels=labels,markers=markers, runs=runs,its=sim_its,snaps=20,tag=tag)
 
     for stochstr in ["_stoch","_determ"]:
         ttag=tag+stochstr
         table_test_value(folder=folder,methods=methods,runs=runs,tag=ttag,stochstring=stochstr)
         table_test_overshoot(folder=folder, methods=methods, runs=runs,d=d,tag=ttag,stochstring=stochstr)
-        plt.rcParams.update({'font.size': 16})
-        plot_test_value_by_perturbation(folder=folder,methods=methods,labels=labels,runs=runs,perturbs=perturbs, test_its=test_its,
+        plt.rcParams.update({'font.size': 18})
+        plot_test_value_by_perturbation(folder=folder,methods=methods,labels=labels,markers=markers,runs=runs,perturbs=perturbs, test_its=test_its,
                                         tag=ttag,stochstring=stochstr)
-        plot_test_overshoot_by_perturbation(folder=folder, methods=methods, labels=labels,runs=runs,d=d,
+        plot_test_overshoot_by_perturbation(folder=folder, methods=methods, labels=labels,markers=markers,runs=runs,d=d,
                                          perturbs=perturbs, test_its=test_its,tag=ttag,stochstring=stochstr)
         table_test_Rpenalised(folder, methods, runs, ttag, scale=500,stochstring=stochstr)  # just take the maximum lagrangian multiplier
